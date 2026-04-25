@@ -1,19 +1,36 @@
 #pragma once
 #include <Core/Event.hpp>
-#include <Maths/Vector.hpp>
+#include <glm/glm.hpp>
 #include <string>
 
 struct WindowSpecification
 {
-	Vector2u size;
-	Vector2u position;
+	glm::uvec2 size;
+	glm::uvec2 position;
 	std::string title;
 };
 
 enum class WindowEvent
 {
-	WindowClose
+	WindowClose,
+	WindowResize,
+	WindowMove,
+	WindowMinimize,
+	WindowMaxmimize,
+
+	WindowMouseMove,
+	WindowMousePress,
+	WindowMouseRelease,
+	WindowScroll,
+
+	WindowKeyPress,
+	WindowKeyRelease,
+	WindowKeyRepeat,
+
+	WindowCharacterType
 };
+
+struct WindowData;
 
 class Window
 {
@@ -21,22 +38,30 @@ public:
 	void Create(const WindowSpecification &specification);
 	void Destroy();
 
-	Vector2u GetSize() const;
-	Vector2u GetPosition() const;
+	glm::uvec2 GetSize() const;
+	glm::uvec2 GetPosition() const;
+	glm::uvec2 GetFrameBufferSize() const;
 	std::string GetTitle() const;
 
-	void SetSize(const Vector2u& size);
-	void SetPosition(const Vector2u& position);
+	void SetSize(const glm::uvec2& size);
+	void SetPosition(const glm::uvec2& position);
 	void SetTitle(const std::string& title);
-
 	void AddListener(std::function<bool(uint32_t code, void* data)> listener);
-
 	void ProcessEvent();
-
 	void* GetNativeWindow() const;
 
+	bool isFullscreen();
+	void SetFullscreen(bool fullscreen);
+
+	void HideCursor();
+	void ShowCursor();
+	bool isCursorHidden();
+
+
+
 private:
-	void* mPlatformData = nullptr;
+	WindowData* mData = nullptr;
 };
+
 
 

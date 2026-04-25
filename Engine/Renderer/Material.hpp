@@ -1,22 +1,63 @@
 #pragma once
-#include <cstdint>
-#include <string>
+#include "Renderer/Descriptor.hpp"
+#include "Renderer/GraphicsPipeline.hpp"
+#include "Renderer/Sampler.hpp"
+#include "Renderer/Texture.hpp"
+#include "Renderer/Types.hpp"
 
-struct ShaderRef
+
+struct MaterialSettings
 {
-	uint32_t key = 0;
+    bool depthTestEnable = true;
+    bool depthWriteEnable = true;
+    bool enableInstancing = false;
+    bool wireframe = false;
+    bool blendEnable = true;
+    CullMode cullMode = CullMode::Back;
+    PrimitiveType primitiveType = PrimitiveType::Triangle;
+    FrontFace frontFace = FrontFace::Clockwise;
+    float lineWidth = 1.f;
+    SampleCount sampleCount = SampleCount::One; 
 };
 
-struct TextureRef
+enum class AttributeType
 {
-	uint32_t key = 0;
+    Int, UInt, Float,
+    IVec2, UVec2, Vec2,
+    IVec3, UVec3, Vec3,
+    IVec4, UVec4, Vec4,
 };
 
-struct Material
-{
-	std::string shader;
 
-	std::string albedo;
-	std::string normal;
-	std::string specular;
+class Material
+{
+    public:
+        Material();
+        void LoadAlbedo(std::string_view filename);
+        void LoadShaders(std::string_view vertexShader, std::string_view fragmentShader);
+
+        void ClearBindingAttribute();
+        void SetBindingAttribute(uint32_t binding, InputRate inputRate, std::initializer_list<AttributeType> layout);
+
+        void Create();
+
+        MaterialSettings& GetSettingsRef();
+
+        void SetAlbedoSampler(Filter mag, Filter min, std::array<AddressMode, 3> addressModes);
+
+        bool IsValid() const { return mIsValid; }
+    private:
+        friend class Renderer;
+
+        Texture mAlbedo;
+        Sampler mAlbedoSampler;
+        
+        GraphicsPipeline mPipeline;
+        MaterialSettings mSettings;
+        VkPipelineLayout mPipelineLayout;
+        uint32_t mFinalLocation = 0;
+
+        Descriptor mDescriptor;
+
+        bool mIsValid = false;
 };

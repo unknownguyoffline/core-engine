@@ -1,30 +1,54 @@
 #pragma once
-#include <vector> 
-#include <Maths/Vector.hpp>
+#include "Utility.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
-
-struct Face
+enum class LayoutType
 {
-	uint32_t index0 = 0, index1 = 0, index2 = 0;
+    Int, UnsignedInt, Float,
+    IVec2, UVec2, Vec2,
+    IVec3, UVec3, Vec3,
+    IVec4, UVec4, Vec4,
 };
 
-struct Mesh
+struct Vertex
 {
-	void AddVertex(const Vector3f& position, const Vector2f& textureCoordinate, const Vector3f& normal)
-	{
-		positions.push_back(position);
-		textureCoordinates.push_back(textureCoordinate);
-		normals.push_back(normal);
-	}
+    glm::vec3 position;
+    glm::vec2 uv;
+    glm::vec3 normal;
 
-	void AddFace(uint32_t index0, uint32_t index1, uint32_t index2)
-	{
-		faces.push_back({ index0, index1, index2 });
-	}
+    Vertex(glm::vec3 position, glm::vec2 uv, glm::vec3 normal): position(position), uv(uv), normal(normal) {}
+    Vertex(){}
+};
 
-	std::vector<Vector3f> positions;
-	std::vector<Vector2f> textureCoordinates;
-	std::vector<Vector3f> normals;
 
-	std::vector<Face> faces;
+class StaticMesh
+{
+    public:
+        StaticMesh();
+        StaticMesh(void* vertices, size_t vertexSize, uint32_t* indices, size_t indexSize);
+
+        void SetData(void* vertices, size_t vertexSize, uint32_t* indices, size_t indexSize);
+
+        bool IsValid() const { return mIsValid; }
+        // void SetLayout(std::initializer_list<LayoutType> layout);
+
+        void Destroy();
+    private:
+        friend class Renderer;
+
+        size_t mVertexSize = 0;
+        size_t mIndexSize = 0;
+        
+        Buffer mStagingVertexBuffer;
+        Buffer mStagingIndexBuffer;
+        
+        Buffer mVertexBuffer;
+        Buffer mIndexBuffer;
+
+        bool mIsValid = false;
+
+        // std::vector<VkVertexInputAttributeDescription> mAttributeDescriptions;
+        // VkVertexInputBindingDescription mBindingDescription;
 };

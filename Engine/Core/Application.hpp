@@ -1,46 +1,72 @@
 #pragma once
-#include "Assets/AssetManager.hpp"
 #include "Core/Window.hpp"
+#include "Input/Keyboard.hpp"
+#include "Input/Mouse.hpp"
 #include "Renderer/Renderer.hpp"
-#include <memory>
+#include "Core/Macro.hpp"
+
 
 class Application
 {
 public:
 	virtual void Initialize() {}
-	virtual void Start() {}
-	virtual void Update() {}
-	virtual void End() {}
+	virtual void OnStart() {}
+	virtual void OnUpdate() {}
+	virtual void OnEnd() {}
+
+	virtual void OnWindowClose() { Close(); }
+	virtual void OnWindowMove(const glm::uvec2& position) {}
+	virtual void OnWindowResize(const glm::uvec2& size) {}
+	
+	virtual void OnMouseMove(const glm::vec2& position, const glm::vec2& offset) {}
+	virtual void OnMouseButtonPress(MouseButton button) {}
+	virtual void OnMouseButtonRelease(MouseButton button) {}
+	virtual void OnScroll(const glm::vec2& scroll) {}
+
+
+	virtual void OnKeyPress(Key key) {}
+	virtual void OnKeyRepeat(Key key) {}
+	virtual void OnKeyRelease(Key key) {}
+
+	virtual void OnCharacterType(char ch) {}
 
 	void InitializeApplication();
 	void TerminateApplication();
 	void RunApplication();
+
+	void HideCursor();
+	void ToggleCursor();
+	bool IsCursorHidden();
 
 	void Close();
 	bool IsRunning();
 
 	bool WindowEventCallback(uint32_t code, void* data);
 
-
-	std::shared_ptr<AssetManager> GetAssetManager() { return mAssetManager; }
-	std::shared_ptr<Renderer> GetRenderer() { return mRenderer; }
+	Window& GetWindowRef() { return mWindow; }
+	Renderer& GetRendererRef() { return mRenderer; }
 
 	static Application* Create();
-	static Application* GetInstance() { return mInstance; }
+	static Application* GetInstance() { return instance; }
 
 	Application();
-	~Application();
+	virtual ~Application();
+
+	Renderer mRenderer;
+
+	float GetDeltaTime();
+	float GetElapsedTime();
 
 private:
 	bool mRunning = true;
-	static Application* mInstance;
+	static Application* instance;
 	void MainLoop();
 
-	std::shared_ptr<Window> mWindow;
-	std::shared_ptr<Renderer> mRenderer;
+	glm::vec2 previousMousePos = glm::vec2(0);
+	Window mWindow;
 
-	std::shared_ptr<AssetManager> mAssetManager;
+	Timer mDeltaTimer;
+	Timer mApplicationTimer;
 
-	Material mMaterial;
-	Mesh mMesh;
+	float mDeltaTime = 0;
 };
