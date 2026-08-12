@@ -8,12 +8,12 @@ void Semaphore::CreateSemaphore()
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         };
 
-    vkCreateSemaphore(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateSemaphore(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 
 void Semaphore::DestorySemaphore()
 {
-    vkDestroySemaphore(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroySemaphore(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
 }
 VkSemaphore Semaphore::GetHandle() const
 {
@@ -33,12 +33,12 @@ void Fence::CreateFence(bool signaled)
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .flags = flag};
 
-    vkCreateFence(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateFence(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 
 void Fence::DestroyFence()
 {
-    vkDestroyFence(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroyFence(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
 }
 VkFence Fence::GetHandle() const
 {

@@ -25,25 +25,31 @@ struct GraphicsLimits
 class GraphicsContext
 {
 public:
-    static void Initialize(DeviceType deviceType);
-    static void Terminate();
+    void Create(DeviceType deviceType);
+    void Destroy();
 
-    static VkInstance GetInstance();
-    static VkPhysicalDevice GetPhysicalDevice();
-    static VkDevice GetDevice();
-    static QueueIndices GetQueueIndices();
-    static Queues GetQueues();
-    static VkCommandPool GetCommandPool();
-    static VkDebugUtilsMessengerEXT GetMessenger();
-    static const GraphicsLimits &GetLimits();
+    VkInstance GetInstance() const;
+    VkPhysicalDevice GetPhysicalDevice() const;
+    VkDevice GetDevice() const;
+    QueueIndices GetQueueIndices() const;
+    Queues GetQueues() const;
+    VkCommandPool GetCommandPool() const;
+    VkDebugUtilsMessengerEXT GetMessenger() const;
+    const GraphicsLimits &GetLimits();
+
+    static const GraphicsContext &GetCurrentContext();
+
+    void SetAsCurrentContext();
 
 private:
-    static VkInstance mInstance;
-    static VkPhysicalDevice mPhysicalDevice;
-    static VkDevice mDevice;
-    static QueueIndices mQueueIndices;
-    static Queues mQueues;
-    static VkCommandPool mCommandPool;
-    static VkDebugUtilsMessengerEXT mMessenger;
-    static GraphicsLimits mLimits;
+    static GraphicsContext *mCurrentContext;
+
+    VkInstance mInstance;
+    VkPhysicalDevice mPhysicalDevice;
+    VkDevice mDevice;
+    QueueIndices mQueueIndices;
+    Queues mQueues;
+    VkCommandPool mCommandPool;
+    VkDebugUtilsMessengerEXT mMessenger;
+    GraphicsLimits mLimits;
 };

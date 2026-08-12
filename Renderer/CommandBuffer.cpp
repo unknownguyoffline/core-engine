@@ -14,7 +14,7 @@ void CommandBuffer::DestroyCommandBuffer()
         return;
     }
 
-    vkFreeCommandBuffers(GraphicsContext::GetDevice(), mCommandPool, 1, &mHandle);
+    vkFreeCommandBuffers(GraphicsContext::GetCurrentContext().GetDevice(), mCommandPool, 1, &mHandle);
     mHandle = VK_NULL_HANDLE;
 }
 void CommandBuffer::BeginRecording(bool oneTimeSubmit)

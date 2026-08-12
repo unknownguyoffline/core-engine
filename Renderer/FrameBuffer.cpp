@@ -22,7 +22,7 @@ void FrameBuffer::CreateFrameBuffer(const glm::uvec2 &size, std::initializer_lis
             .layers = layers,
         };
 
-    vkCreateFramebuffer(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateFramebuffer(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 
 void FrameBuffer::CreateFrameBuffer(std::initializer_list<ImageDeprecated> attachments, const RenderPass &renderPass, uint32_t layers)
@@ -44,7 +44,7 @@ void FrameBuffer::CreateFrameBuffer(std::initializer_list<ImageDeprecated> attac
             .layers = layers,
         };
 
-    vkCreateFramebuffer(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateFramebuffer(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 
 void FrameBuffer::CreateFrameBuffer(std::initializer_list<Image> attachments, const RenderPass &renderPass, uint32_t layers)
@@ -66,7 +66,7 @@ void FrameBuffer::CreateFrameBuffer(std::initializer_list<Image> attachments, co
             .layers = layers,
         };
 
-    vkCreateFramebuffer(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateFramebuffer(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 
 void FrameBuffer::DestroyFrameBuffer()
@@ -75,7 +75,7 @@ void FrameBuffer::DestroyFrameBuffer()
     {
         return;
     }
-    vkDestroyFramebuffer(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroyFramebuffer(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
     mHandle = VK_NULL_HANDLE;
     mSize = {};
 }

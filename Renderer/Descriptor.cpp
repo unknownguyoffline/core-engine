@@ -84,7 +84,7 @@ void Descriptor::CreateDescriptorSetLayout()
         createInfo.pNext = &bindingCreateInfo;
     }
 
-    vkCreateDescriptorSetLayout(GraphicsContext::GetDevice(), &createInfo, nullptr, &mSetLayout);
+    vkCreateDescriptorSetLayout(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mSetLayout);
 }
 void Descriptor::CreateDescriptorPool()
 {
@@ -115,7 +115,7 @@ void Descriptor::CreateDescriptorPool()
         createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
     }
 
-    vkCreateDescriptorPool(GraphicsContext::GetDevice(), &createInfo, nullptr, &mDescriptorPool);
+    vkCreateDescriptorPool(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mDescriptorPool);
 }
 void Descriptor::AllocateDescriptorSet()
 {
@@ -139,7 +139,7 @@ void Descriptor::AllocateDescriptorSet()
         allocateInfo.pNext = &setVariableDescriptorCountAllocateInfo;
     }
 
-    vkAllocateDescriptorSets(GraphicsContext::GetDevice(), &allocateInfo, &mSet);
+    vkAllocateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), &allocateInfo, &mSet);
 }
 
 void Descriptor::DestroyDescriptorSetLayout()
@@ -148,7 +148,7 @@ void Descriptor::DestroyDescriptorSetLayout()
     {
         return;
     }
-    vkDestroyDescriptorSetLayout(GraphicsContext::GetDevice(), mSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(GraphicsContext::GetCurrentContext().GetDevice(), mSetLayout, nullptr);
     mSetLayout = VK_NULL_HANDLE;
 }
 
@@ -158,11 +158,11 @@ void Descriptor::DestroyDescriptorPool()
     {
         return;
     }
-    vkDestroyDescriptorPool(GraphicsContext::GetDevice(), mDescriptorPool, nullptr);
+    vkDestroyDescriptorPool(GraphicsContext::GetCurrentContext().GetDevice(), mDescriptorPool, nullptr);
     mDescriptorPool = VK_NULL_HANDLE;
 }
 
-void Descriptor::UpdateBuffer(const Buffer &buffer, uint32_t binding)
+void Descriptor::UpdateBuffer(const Buffer &buffer, uint32_t binding) const
 {
     VkDescriptorBufferInfo bufferInfo =
         {
@@ -182,10 +182,10 @@ void Descriptor::UpdateBuffer(const Buffer &buffer, uint32_t binding)
             .pBufferInfo = &bufferInfo,
         };
 
-    vkUpdateDescriptorSets(GraphicsContext::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
-void Descriptor::UpdateImage(const ImageDeprecated &image, ImageLayout layout, const Sampler &sampler, uint32_t binding)
+void Descriptor::UpdateImage(const ImageDeprecated &image, ImageLayout layout, const Sampler &sampler, uint32_t binding) const
 {
     VkDescriptorImageInfo imageInfo =
         {
@@ -205,9 +205,9 @@ void Descriptor::UpdateImage(const ImageDeprecated &image, ImageLayout layout, c
             .pImageInfo = &imageInfo,
         };
 
-    vkUpdateDescriptorSets(GraphicsContext::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
-void Descriptor::UpdateImage(const Image &image, const Sampler &sampler, uint32_t binding)
+void Descriptor::UpdateImage(const Image &image, const Sampler &sampler, uint32_t binding) const
 {
     VkDescriptorImageInfo imageInfo =
         {
@@ -227,9 +227,9 @@ void Descriptor::UpdateImage(const Image &image, const Sampler &sampler, uint32_
             .pImageInfo = &imageInfo,
         };
 
-    vkUpdateDescriptorSets(GraphicsContext::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
-void Descriptor::UpdateImage(const ImageView &view, ImageLayout layout, const Sampler &sampler, uint32_t binding)
+void Descriptor::UpdateImage(const ImageView &view, ImageLayout layout, const Sampler &sampler, uint32_t binding) const
 {
     VkDescriptorImageInfo imageInfo =
         {
@@ -249,10 +249,10 @@ void Descriptor::UpdateImage(const ImageView &view, ImageLayout layout, const Sa
             .pImageInfo = &imageInfo,
         };
 
-    vkUpdateDescriptorSets(GraphicsContext::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
-void Descriptor::UpdateImageIndex(const ImageDeprecated &image, ImageLayout layout, const Sampler &sampler, uint32_t binding, uint32_t index)
+void Descriptor::UpdateImageIndex(const ImageDeprecated &image, ImageLayout layout, const Sampler &sampler, uint32_t binding, uint32_t index) const
 {
     VkDescriptorImageInfo imageInfo =
         {
@@ -272,7 +272,7 @@ void Descriptor::UpdateImageIndex(const ImageDeprecated &image, ImageLayout layo
             .pImageInfo = &imageInfo,
         };
 
-    vkUpdateDescriptorSets(GraphicsContext::GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+    vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
 VkDescriptorSet Descriptor::GetDescriptorSet() const

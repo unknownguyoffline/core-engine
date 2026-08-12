@@ -7,15 +7,15 @@
 class FontManager
 {
 public:
-    static std::string Load(std::string_view filename, std::string_view identifier);
-    static void Destroy(std::string_view identifier);
-    static const std::unordered_map<std::string, Font> &GetMap();
-    static const Font &GetFont(std::string_view identifier);
-    static bool HasFont(std::string_view identifier);
-    static void Clear();
+    std::string Load(std::string_view filename, std::string_view identifier);
+    void Destroy(std::string_view identifier);
+    const std::unordered_map<std::string, Font> &GetMap() const;
+    const Font &GetFont(std::string_view identifier) const;
+    bool HasFont(std::string_view identifier);
+    void Clear();
 
 private:
-    static std::unordered_map<std::string, Font> mFontMap;
-    static FontImporter mImporter;
-    static uint64_t mLastId;
+    std::unordered_map<std::string, Font> mFontMap;
+    FontImporter mImporter;
+    uint64_t mLastId;
 };

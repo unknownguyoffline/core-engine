@@ -2,8 +2,6 @@
 #include "Core/Macro.hpp"
 #include "GraphicsContext.hpp"
 #include "Renderer/Converter.hpp"
-#include "Renderer/Descriptor.hpp"
-#include "Utility.hpp"
 
 void GraphicsPipeline::SetVertexShader(VkShaderModule shader)
 {
@@ -220,7 +218,7 @@ void GraphicsPipeline::CreatePipeline(const RenderPass &renderPass, uint32_t sub
             .pPushConstantRanges = ranges.data(),
         };
 
-    vkCreatePipelineLayout(GraphicsContext::GetDevice(), &pipelineLayoutCreateInfo, nullptr, &mPipelineLayout);
+    vkCreatePipelineLayout(GraphicsContext::GetCurrentContext().GetDevice(), &pipelineLayoutCreateInfo, nullptr, &mPipelineLayout);
 
     uint32_t stageCount = 2;
     if (mGeometryShader != VK_NULL_HANDLE)
@@ -243,12 +241,12 @@ void GraphicsPipeline::CreatePipeline(const RenderPass &renderPass, uint32_t sub
     pipelineCreateInfo.subpass = subpassIndex;
     pipelineCreateInfo.pDepthStencilState = &depthStencil;
 
-    vkCreateGraphicsPipelines(GraphicsContext::GetDevice(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mHandle);
+    vkCreateGraphicsPipelines(GraphicsContext::GetCurrentContext().GetDevice(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mHandle);
 }
 
 void GraphicsPipeline::DestroyPipeline()
 {
-    vkDestroyPipeline(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroyPipeline(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
 }
 
 VkPipelineLayout GraphicsPipeline::GetPipelineLayout() const

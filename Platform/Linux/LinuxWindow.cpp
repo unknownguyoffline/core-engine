@@ -711,6 +711,6 @@ void Window::SetFullscreen(bool fullscreen)
 VkSurfaceKHR Window::CreateWindowSurface() const
 {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    glfwCreateWindowSurface(GraphicsContext::GetInstance(), mWindowData.window, nullptr, &surface);
+    glfwCreateWindowSurface(GraphicsContext::GetCurrentContext().GetInstance(), mWindowData.window, nullptr, &surface);
     return surface;
 }

@@ -194,7 +194,7 @@ void RenderPass::CreateRenderPass()
             .pDependencies = mDependencies.data(),
         };
 
-    vkCreateRenderPass2(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateRenderPass2(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 
     mSubpasses.clear();
     mAttachments.clear();
@@ -216,7 +216,7 @@ void RenderPass::DestroyRenderPass()
     mAttachments.clear();
     mDependencies.clear();
     mSubpasses.clear();
-    vkDestroyRenderPass(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroyRenderPass(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
     mHandle = VK_NULL_HANDLE;
 }
 

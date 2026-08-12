@@ -1,4 +1,5 @@
 #pragma once
+#include "Assets/ShaderManager.hpp"
 #include "Renderer/Camera.hpp"
 #include "Renderer/ImageView.hpp"
 #include "Renderer/RendererType.hpp"
@@ -95,6 +96,9 @@ private:
     std::vector<ImageView> mImageViews;
 
     uint32_t mShadowMapResolution = 2048;
+
+    static Shader mDirectionalShader;
+    static Shader mPointShader;
 
 private:
     void GeneratePointLightShadowMap(const std::vector<RenderCommand> &renderCommand);

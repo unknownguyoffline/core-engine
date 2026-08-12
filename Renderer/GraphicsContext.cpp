@@ -12,7 +12,7 @@ VkBool32 validationCallback(VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeve
     return VK_FALSE;
 };
 
-void GraphicsContext::Initialize(DeviceType deviceType)
+void GraphicsContext::Create(DeviceType deviceType)
 {
     CHROME_TRACE_FUNCTION();
 
@@ -208,7 +208,7 @@ void GraphicsContext::Initialize(DeviceType deviceType)
     }
 }
 
-void GraphicsContext::Terminate()
+void GraphicsContext::Destroy()
 {
     CHROME_TRACE_FUNCTION();
     auto destroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(mInstance, "vkDestroyDebugUtilsMessengerEXT");
@@ -223,41 +223,43 @@ void GraphicsContext::Terminate()
     mMessenger = VK_NULL_HANDLE;
 }
 
-VkInstance GraphicsContext::GetInstance()
+VkInstance GraphicsContext::GetInstance() const
 {
     return mInstance;
 }
-VkPhysicalDevice GraphicsContext::GetPhysicalDevice()
+VkPhysicalDevice GraphicsContext::GetPhysicalDevice() const
 {
     return mPhysicalDevice;
 }
-VkDevice GraphicsContext::GetDevice()
+VkDevice GraphicsContext::GetDevice() const
 {
     return mDevice;
 }
-QueueIndices GraphicsContext::GetQueueIndices()
+QueueIndices GraphicsContext::GetQueueIndices() const
 {
     return mQueueIndices;
 }
-Queues GraphicsContext::GetQueues()
+Queues GraphicsContext::GetQueues() const
 {
     return mQueues;
 }
-VkCommandPool GraphicsContext::GetCommandPool()
+VkCommandPool GraphicsContext::GetCommandPool() const
 {
     return mCommandPool;
 }
 
-VkDebugUtilsMessengerEXT GraphicsContext::GetMessenger()
+VkDebugUtilsMessengerEXT GraphicsContext::GetMessenger() const
 {
     return mMessenger;
 }
 
-VkInstance GraphicsContext::mInstance = VK_NULL_HANDLE;
-VkPhysicalDevice GraphicsContext::mPhysicalDevice = VK_NULL_HANDLE;
-VkDevice GraphicsContext::mDevice = VK_NULL_HANDLE;
-VkCommandPool GraphicsContext::mCommandPool = VK_NULL_HANDLE;
-VkDebugUtilsMessengerEXT GraphicsContext::mMessenger = VK_NULL_HANDLE;
-QueueIndices GraphicsContext::mQueueIndices;
-Queues GraphicsContext::mQueues;
-GraphicsLimits GraphicsContext::mLimits;
+const GraphicsContext &GraphicsContext::GetCurrentContext()
+{
+    return *mCurrentContext;
+}
+void GraphicsContext::SetAsCurrentContext()
+{
+    mCurrentContext = this;
+}
+
+GraphicsContext *GraphicsContext::mCurrentContext;

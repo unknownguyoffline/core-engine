@@ -32,9 +32,9 @@ void Sampler::CreateSampler()
             .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
         };
 
-    vkCreateSampler(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateSampler(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 void Sampler::DestroySampler()
 {
-    vkDestroySampler(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroySampler(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
 }

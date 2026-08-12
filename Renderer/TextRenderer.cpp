@@ -54,7 +54,8 @@ void TextRenderer::Initialize()
 
     // mQuadMeshId = MeshManager::CreateMesh(vertices, indices);
 
-    mShaderID = ShaderManager::Load("bezier", "Shaders/bezier.vert.spv", "Shaders/bezier.frag.spv", false);
+    mShader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/bezier.vert.spv");
+    mShader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/bezier.frag.spv");
 
     mUniformBuffer = UniformBuffer(sizeof(TextUniformData), &mUniformData);
 
@@ -88,8 +89,8 @@ void TextRenderer::Initialize()
     mTextPipeline.EnableDepthWrite(false);
     mTextPipeline.SetCullMode(CullMode::None);
 
-    mTextPipeline.SetVertexShader(ShaderManager::Get(mShaderID).vertex);
-    mTextPipeline.SetFragmentShader(ShaderManager::Get(mShaderID).fragment);
+    mTextPipeline.SetVertexShader(mShader.vertex);
+    mTextPipeline.SetFragmentShader(mShader.fragment);
 
     mTextPipeline.SetMultisampleCount(Renderer::GetSampleCount());
 
@@ -100,9 +101,9 @@ void TextRenderer::Terminate()
 {
 }
 
-void TextRenderer::DrawCharacter(std::string_view id, char ch, const glm::vec3 &position, const glm::vec4 &forgroundColor, const glm::vec4 &backgroundColor, const Transform &transform)
+void TextRenderer::DrawCharacter(const Font &font, char ch, const glm::vec3 &position, const glm::vec4 &forgroundColor, const glm::vec4 &backgroundColor, const Transform &transform)
 {
-    const Font &font = FontManager::GetFont(id);
+    // const Font &font = FontManager::GetFont(id);
 
     mBezierDescriptor.UpdateBuffer(font.GetStorageBuffer().GetBuffer(), 0);
 
@@ -139,9 +140,9 @@ void TextRenderer::DrawCharacter(std::string_view id, char ch, const glm::vec3 &
     mInstanceData.push_back(instanceData);
 }
 
-void TextRenderer::DrawText(std::string_view id, const std::string &text, float spacing, const glm::vec4 &forgroundColor, const glm::vec4 &backgroundColor, const Transform &transform)
+void TextRenderer::DrawText(const Font &font, const std::string &text, float spacing, const glm::vec4 &forgroundColor, const glm::vec4 &backgroundColor, const Transform &transform)
 {
-    const Font &font = FontManager::GetFont(id);
+    // const Font &font = FontManager::GetFont(id);
 
     glm::vec3 position = glm::vec3(0);
 
@@ -157,14 +158,14 @@ void TextRenderer::DrawText(std::string_view id, const std::string &text, float 
             continue;
         }
         const Glyph &glyph = font.GetGlyph(ch);
-        DrawCharacter(id, ch, position, forgroundColor, backgroundColor, transform);
+        DrawCharacter(font, ch, position, forgroundColor, backgroundColor, transform);
         position.x += font.GetGlyph(ch).advance.x * spacing;
     }
 }
 
-void TextRenderer::DrawText(std::string_view id, const std::string &text, const TextProperty &property)
+void TextRenderer::DrawText(const Font &font, const std::string &text, const TextProperty &property)
 {
-    const Font &font = FontManager::GetFont(id);
+    // const Font &font = FontManager::GetFont(id);
 
     glm::vec3 position = glm::vec3(0);
 
@@ -191,19 +192,19 @@ void TextRenderer::DrawText(std::string_view id, const std::string &text, const 
             continue;
         }
         const Glyph &glyph = font.GetGlyph(ch);
-        DrawCharacter(id, ch, position, property);
+        DrawCharacter(font, ch, position, property);
         position.x += font.GetGlyph(ch).advance.x * property.spacing;
     }
 }
 
-void TextRenderer::DrawCharacter(std::string_view id, char ch, const glm::vec3 &position, const TextProperty &property)
+void TextRenderer::DrawCharacter(const Font &font, char ch, const glm::vec3 &position, const TextProperty &property)
 {
-    DrawCharacter(id, ch, position, property.forgroundColor, property.backgroundColor, property.transform);
+    DrawCharacter(font, ch, position, property.forgroundColor, property.backgroundColor, property.transform);
 }
 
-void TextRenderer::DrawText(std::string_view id, const std::string &text, const std::function<TextProperty(char ch, uint32_t index, const glm::vec2 &position, float totalSize)> &callback)
+void TextRenderer::DrawText(const Font &font, const std::string &text, const std::function<TextProperty(char ch, uint32_t index, const glm::vec2 &position, float totalSize)> &callback)
 {
-    const Font &font = FontManager::GetFont(id);
+    // const Font &font = FontManager::GetFont(id);
 
     glm::vec3 position = glm::vec3(0);
 
@@ -233,7 +234,7 @@ void TextRenderer::DrawText(std::string_view id, const std::string &text, const 
 
         TextProperty property = callback(ch, i, position, totalSize);
         const Glyph &glyph = font.GetGlyph(ch);
-        DrawCharacter(id, ch, position, property);
+        DrawCharacter(font, ch, position, property);
         position.x += font.GetGlyph(ch).advance.x * property.spacing;
     }
 }
@@ -281,7 +282,7 @@ Descriptor TextRenderer::mUniformDescriptor;
 Descriptor TextRenderer::mBezierDescriptor;
 TextUniformData TextRenderer::mUniformData;
 Camera TextRenderer::mCamera;
-std::string TextRenderer::mShaderID;
+Shader TextRenderer::mShader;
 Buffer TextRenderer::mVertexBuffer;
 Buffer TextRenderer::mIndexBuffer;
 InstanceBuffer TextRenderer::mInstanceBuffer;

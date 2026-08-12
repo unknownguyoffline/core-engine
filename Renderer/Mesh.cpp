@@ -87,13 +87,3 @@ void Mesh::SetName(const std::string &name)
 void Mesh::Initialize()
 {
 }
-
-void Mesh::EnableSerializing(bool enable)
-{
-    mEnableSerializing = enable;
-}
-
-bool Mesh::IsSerializingEnabled() const
-{
-    return mEnableSerializing;
-}

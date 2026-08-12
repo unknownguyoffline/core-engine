@@ -18,7 +18,7 @@ void ComputePipeline::Create(const std::vector<Descriptor *> &descriptors)
             .pSetLayouts = setLayouts.data(),
         };
 
-    vkCreatePipelineLayout(GraphicsContext::GetDevice(), &pipelineCreateInfo, nullptr, &mLayout);
+    vkCreatePipelineLayout(GraphicsContext::GetCurrentContext().GetDevice(), &pipelineCreateInfo, nullptr, &mLayout);
 
     VkPipelineShaderStageCreateInfo stage =
         {
@@ -35,14 +35,14 @@ void ComputePipeline::Create(const std::vector<Descriptor *> &descriptors)
             .layout = mLayout,
         };
 
-    vkCreateComputePipelines(GraphicsContext::GetDevice(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &mHandle);
+    vkCreateComputePipelines(GraphicsContext::GetCurrentContext().GetDevice(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &mHandle);
 }
 
 void ComputePipeline::Destroy()
 {
-    vkDestroyPipelineLayout(GraphicsContext::GetDevice(), mLayout, nullptr);
-    vkDestroyShaderModule(GraphicsContext::GetDevice(), mShader, nullptr);
-    vkDestroyPipeline(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroyPipelineLayout(GraphicsContext::GetCurrentContext().GetDevice(), mLayout, nullptr);
+    vkDestroyShaderModule(GraphicsContext::GetCurrentContext().GetDevice(), mShader, nullptr);
+    vkDestroyPipeline(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
 }
 
 VkPipelineLayout ComputePipeline::GetPipelineLayout() const
@@ -62,5 +62,5 @@ ComputePipeline::~ComputePipeline()
 
 void ComputePipeline::LoadShader(std::string_view filename)
 {
-    mShader = CreateShaderFromFile(GraphicsContext::GetDevice(), filename.data());
+    mShader = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), filename.data());
 }

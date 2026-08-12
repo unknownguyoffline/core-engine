@@ -2,9 +2,6 @@
 
 void TextureManager::Initialize()
 {
-    mDescriptor.AddBindlessDescriptor(DescriptorType::CombinedSampler, ShaderStage::Fragment, 1024);
-    mDescriptor.CreateDescriptor();
-
     mSampler.CreateSampler();
 }
 
@@ -22,8 +19,6 @@ std::string TextureManager::LoadTexture(std::string_view identifier, std::string
     uint32_t index = mTextureDescriptorIndex.size();
     mTextureDescriptorIndex[identifier.data()] = index;
 
-    mDescriptor.UpdateImageIndex(mTextureMap[identifier.data()].GetImage(), ImageLayout::ShaderRead, texture.GetSampler(), 0, index);
-
     return identifier.data();
 }
 
@@ -36,8 +31,6 @@ std::string TextureManager::CreateTexture(std::string_view identifier, void *dat
 
     uint32_t index = mTextureDescriptorIndex.size();
     mTextureDescriptorIndex[identifier.data()] = index;
-
-    mDescriptor.UpdateImageIndex(mTextureMap[identifier.data()].GetImage(), ImageLayout::ShaderRead, texture.GetSampler(), 0, index);
 
     return identifier.data();
 }
@@ -66,28 +59,35 @@ uint32_t TextureManager::GetCount()
 {
     return mTextureMap.size();
 }
-const std::unordered_map<std::string, Texture> &TextureManager::GetMap()
+const std::unordered_map<std::string, Texture> &TextureManager::GetMap() const
 {
     return mTextureMap;
 }
 
-const Descriptor &TextureManager::GetDescriptor()
+void TextureManager::SetTextureDescriptor(const Descriptor &descriptor)
 {
-    return mDescriptor;
+    uint32_t index = 0;
+    for (const auto &[id, texture] : mTextureMap)
+    {
+        descriptor.UpdateImageIndex(texture.GetImage(), ImageLayout::ShaderRead, texture.GetSampler(), 0, index);
+        mTextureDescriptorIndex[id] = index;
+        index++;
+    }
 }
-uint32_t TextureManager::GetTextureDescriptorIndex(std::string_view identifier)
+
+uint32_t TextureManager::GetTextureDescriptorIndex(std::string_view identifier) const
 {
     if (identifier.size() == 0)
         return UINT32_MAX;
 
-    return mTextureDescriptorIndex[identifier.data()];
+    return mTextureDescriptorIndex.at(identifier.data());
 }
 void TextureManager::Clear()
 {
     mTextureMap.clear();
 }
 
-std::unordered_map<std::string, Texture> TextureManager::mTextureMap;
-Sampler TextureManager::mSampler;
-Descriptor TextureManager::mDescriptor;
-std::unordered_map<std::string, uint32_t> TextureManager::mTextureDescriptorIndex;
+// std::unordered_map<std::string, Texture> TextureManager::mTextureMap;
+// Sampler TextureManager::mSampler;
+// Descriptor TextureManager::mDescriptor;
+// std::unordered_map<std::string, uint32_t> TextureManager::mTextureDescriptorIndex;

@@ -181,9 +181,9 @@ void Texture::Create(void *data, const glm::uvec2 &size, ImageFormat format, Fil
 
     CmdTransitionImageLayout(commandBuffer, ImageLayout::TransferDestination, ImageLayout::ShaderRead, ImageAspect::Color, mImage);
     commandBuffer.EndRecording();
-    commandBuffer.QueueSubmit(GraphicsContext::GetQueues().transfer);
+    commandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().transfer);
 
-    vkQueueWaitIdle(GraphicsContext::GetQueues().transfer);
+    vkQueueWaitIdle(GraphicsContext::GetCurrentContext().GetQueues().transfer);
 
     mIsValid = true;
 

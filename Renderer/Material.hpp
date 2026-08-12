@@ -34,13 +34,11 @@ struct Material
     float roughnessFactor = 0.5;
     float metallicFactor = 0.0;
 
-    float indexOfRefraction{};
+    float indexOfRefraction = 0;
 
     bool enableDepthWrite = true;
     bool enableDepthTest = true;
     bool enableBlending = true;
-
-    bool enableSerializing = false;
 
     std::string name = "Untitled";
 };

@@ -30,7 +30,7 @@ void ImageView::CreateImageView(const ImageDeprecated &image, ViewType type, Ima
                 },
         };
 
-    vkCreateImageView(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateImageView(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 void ImageView::CreateImageView(const Image &image, ViewType type, ImageAspect aspect, uint32_t baseLayer, uint32_t layerCount, uint32_t baseMipmapLevel, uint32_t mipmapCount, const Swizzle &swizzle)
 {
@@ -57,12 +57,12 @@ void ImageView::CreateImageView(const Image &image, ViewType type, ImageAspect a
                 },
         };
 
-    vkCreateImageView(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateImageView(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 }
 
 void ImageView::DestroyImageView()
 {
-    vkDestroyImageView(GraphicsContext::GetDevice(), mHandle, nullptr);
+    vkDestroyImageView(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
 }
 
 VkImageView ImageView::GetHandle() const

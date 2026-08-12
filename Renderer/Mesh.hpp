@@ -52,13 +52,8 @@ public:
 
     static void Initialize();
 
-    void EnableSerializing(bool enable);
-    bool IsSerializingEnabled() const;
-
 private:
     std::string mName;
-
-    bool mEnableSerializing = false;
 
     friend class Renderer;
 

@@ -16,7 +16,7 @@ void MeshManager::Clear()
 {
     mMeshMap.clear();
 }
-std::unordered_map<std::string, Mesh> &MeshManager::GetMap()
+const std::unordered_map<std::string, Mesh> &MeshManager::GetMap() const
 {
     return mMeshMap;
 }
@@ -26,22 +26,22 @@ void MeshManager::DestroyMesh(std::string_view identifier)
     mMeshMap[identifier.data()].Destroy();
 }
 
-const Mesh &MeshManager::GetMesh(std::string_view identifier)
+const Mesh &MeshManager::GetMesh(std::string_view identifier) const
 {
     assert(HasMesh(identifier));
     return mMeshMap.at(identifier.data());
 }
 
-Mesh &MeshManager::GetMeshRef(std::string_view identifier)
+Mesh &MeshManager::GetMesh(std::string_view identifier)
 {
     assert(HasMesh(identifier));
     return mMeshMap.at(identifier.data());
 }
 
-bool MeshManager::HasMesh(std::string_view identifier)
+bool MeshManager::HasMesh(std::string_view identifier) const
 {
     return mMeshMap.contains(identifier.data());
 }
 
-uint64_t MeshManager::mLastMeshId = 0;
-std::unordered_map<std::string, Mesh> MeshManager::mMeshMap;
+// uint64_t MeshManager::mLastMeshId = 0;
+// std::unordered_map<std::string, Mesh> MeshManager::mMeshMap;

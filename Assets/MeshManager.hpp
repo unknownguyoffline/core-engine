@@ -6,19 +6,19 @@
 class MeshManager
 {
 public:
-    static std::string CreateMesh(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices, std::string_view identifier);
-    static std::string AddMesh(const Mesh &mesh, std::string_view identifier);
-    static void DestroyMesh(std::string_view identifier);
+    std::string CreateMesh(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices, std::string_view identifier);
+    std::string AddMesh(const Mesh &mesh, std::string_view identifier);
+    void DestroyMesh(std::string_view identifier);
 
-    static const Mesh &GetMesh(std::string_view identifier);
-    static Mesh &GetMeshRef(std::string_view identifier);
-    static bool HasMesh(std::string_view identifier);
+    const Mesh &GetMesh(std::string_view identifier) const;
+    Mesh &GetMesh(std::string_view identifier);
+    bool HasMesh(std::string_view identifier) const;
 
-    static void Clear();
+    void Clear();
 
-    static std::unordered_map<std::string, Mesh> &GetMap();
+    const std::unordered_map<std::string, Mesh> &GetMap() const;
 
 private:
-    static uint64_t mLastMeshId;
-    static std::unordered_map<std::string, Mesh> mMeshMap;
+    uint64_t mLastMeshId;
+    std::unordered_map<std::string, Mesh> mMeshMap;
 };

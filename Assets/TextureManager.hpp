@@ -1,36 +1,33 @@
 #pragma once
 #include "Renderer/Descriptor.hpp"
 #include "Renderer/Texture.hpp"
-#include <memory>
 #include <unordered_map>
 
 class TextureManager
 {
 public:
-    static void Initialize();
-    static void Terminate();
-    static std::string LoadTexture(std::string_view identifier, std::string_view filename, ImageFormat format = ImageFormat::RGBA8);
-    static std::string CreateTexture(std::string_view identifier, void *data, const glm::uvec2 &size, ImageFormat format, Filter minFilter = Filter::Linear, Filter magFilter = Filter::Linear, AddressMode addressMode = AddressMode::Border);
+    void Initialize();
+    void Terminate();
+    std::string LoadTexture(std::string_view identifier, std::string_view filename, ImageFormat format = ImageFormat::RGBA8);
+    std::string CreateTexture(std::string_view identifier, void *data, const glm::uvec2 &size, ImageFormat format, Filter minFilter = Filter::Linear, Filter magFilter = Filter::Linear, AddressMode addressMode = AddressMode::Border);
 
-    static void DestroyTexture(std::string_view identifier);
+    void DestroyTexture(std::string_view identifier);
 
-    static const Texture &GetTexture(std::string_view identifier);
-    static Texture &GetTextureRef(std::string_view identifier);
-    static bool HasTexture(std::string_view identifier);
+    const Texture &GetTexture(std::string_view identifier);
+    Texture &GetTextureRef(std::string_view identifier);
+    bool HasTexture(std::string_view identifier);
 
-    static uint32_t GetCount();
+    uint32_t GetCount();
 
-    static const std::unordered_map<std::string, Texture> &GetMap();
+    const std::unordered_map<std::string, Texture> &GetMap() const;
 
-    static const Descriptor &GetDescriptor();
+    void SetTextureDescriptor(const Descriptor &descriptor);
+    uint32_t GetTextureDescriptorIndex(std::string_view identifier) const;
 
-    static uint32_t GetTextureDescriptorIndex(std::string_view identifier);
-
-    static void Clear();
+    void Clear();
 
 private:
-    static Sampler mSampler;
-    static Descriptor mDescriptor;
-    static std::unordered_map<std::string, Texture> mTextureMap;
-    static std::unordered_map<std::string, uint32_t> mTextureDescriptorIndex;
+    Sampler mSampler;
+    std::unordered_map<std::string, Texture> mTextureMap;
+    std::unordered_map<std::string, uint32_t> mTextureDescriptorIndex;
 };

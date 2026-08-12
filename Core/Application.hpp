@@ -161,4 +161,6 @@ private:
     bool mDisableCursor = false;
 
     RendererSpecification mRendererSpecification;
+
+    GraphicsContext mGraphicsContext;
 };

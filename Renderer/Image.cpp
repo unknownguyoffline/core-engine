@@ -27,10 +27,10 @@ void Image::CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage u
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         };
 
-    vkCreateImage(GraphicsContext::GetDevice(), &createInfo, nullptr, &mHandle);
+    vkCreateImage(GraphicsContext::GetCurrentContext().GetDevice(), &createInfo, nullptr, &mHandle);
 
     VkMemoryRequirements requirements;
-    vkGetImageMemoryRequirements(GraphicsContext::GetDevice(), mHandle, &requirements);
+    vkGetImageMemoryRequirements(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, &requirements);
 
     VkMemoryAllocateInfo allocateInfo =
         {
@@ -39,8 +39,8 @@ void Image::CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage u
             .memoryTypeIndex = FindMemoryTypeIndex(requirements.memoryTypeBits, GetVulkanMemoryProperty(memoryProperty)),
         };
 
-    vkAllocateMemory(GraphicsContext::GetDevice(), &allocateInfo, nullptr, &mMemory);
-    vkBindImageMemory(GraphicsContext::GetDevice(), mHandle, mMemory, 0);
+    vkAllocateMemory(GraphicsContext::GetCurrentContext().GetDevice(), &allocateInfo, nullptr, &mMemory);
+    vkBindImageMemory(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, mMemory, 0);
 
     ViewType viewType = ViewType::TwoDimensional;
     switch (type)
@@ -86,8 +86,8 @@ void Image::CreateCubeMap(const glm::uvec2 &size, ImageFormat format, ImageUsage
 
 void Image::DestroyImage()
 {
-    vkDestroyImage(GraphicsContext::GetDevice(), mHandle, nullptr);
-    vkFreeMemory(GraphicsContext::GetDevice(), mMemory, nullptr);
+    vkDestroyImage(GraphicsContext::GetCurrentContext().GetDevice(), mHandle, nullptr);
+    vkFreeMemory(GraphicsContext::GetCurrentContext().GetDevice(), mMemory, nullptr);
 }
 void Image::TransitionLayout(ImageLayout newLayout)
 {
@@ -116,8 +116,8 @@ void Image::TransitionLayout(ImageLayout newLayout)
     vkCmdPipelineBarrier(commandBuffer.GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     commandBuffer.EndRecording();
 
-    commandBuffer.QueueSubmit(GraphicsContext::GetQueues().transfer);
-    vkQueueWaitIdle(GraphicsContext::GetQueues().transfer);
+    commandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().transfer);
+    vkQueueWaitIdle(GraphicsContext::GetCurrentContext().GetQueues().transfer);
 
     mLayout = newLayout;
 }
@@ -178,8 +178,8 @@ void Image::SetData(const void *data, const glm::uvec2 &size, const glm::uvec2 &
     CmdTransitionLayout(commandBuffer, ImageLayout::ShaderRead);
 
     commandBuffer.EndRecording();
-    commandBuffer.QueueSubmit(GraphicsContext::GetQueues().transfer);
-    vkQueueWaitIdle(GraphicsContext::GetQueues().transfer);
+    commandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().transfer);
+    vkQueueWaitIdle(GraphicsContext::GetCurrentContext().GetQueues().transfer);
 }
 
 VkImage Image::GetHandle() const

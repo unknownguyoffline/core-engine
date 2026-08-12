@@ -12,6 +12,9 @@ void Application::InitializeApplication()
     mWindow = Window({800, 600}, "Untitled");
     mWindow.AddListener(BindMember(Application::WindowEventCallback));
 
+    mGraphicsContext.Create(DeviceType::Dedicated);
+    mGraphicsContext.SetAsCurrentContext();
+
     Renderer::Initialize(mRendererSpecification);
 }
 

@@ -13,7 +13,7 @@ Entity Scene::GetEntityById(EntityID id)
 }
 
 Entity::Entity(EntityID id, Scene *scene)
-    : mId(id), mScene(scene)
+    : mId(id), mScene(scene), mConstScene(scene)
 {
 }
 

@@ -5,10 +5,11 @@
 
 void DebugRenderer::Initialize()
 {
-    mDebugLineId = ShaderManager::Load("debugLine", "Shaders/debugLine.vert.spv", "Shaders/debugLine.frag.spv", false);
+    mLineShader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/debugLine.vert.spv");
+    mLineShader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/debugLine.frag.spv");
 
-    mLinePipeline.SetVertexShader(ShaderManager::Get(mDebugLineId).vertex);
-    mLinePipeline.SetFragmentShader(ShaderManager::Get(mDebugLineId).fragment);
+    mLinePipeline.SetVertexShader(mLineShader.vertex);
+    mLinePipeline.SetFragmentShader(mLineShader.fragment);
     mLinePipeline.AddBinding(0, sizeof(LineVertex), InputRate::Vertex);
     mLinePipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(LineVertex, position));
     mLinePipeline.AddAttribute(0, 1, ImageFormat::RGB32, offsetof(LineVertex, color));

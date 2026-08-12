@@ -1,6 +1,4 @@
 #pragma once
-#include "Assets/MaterialManager.hpp"
-#include "Assets/MeshManager.hpp"
 #include "Light.hpp"
 #include "Renderer/Camera.hpp"
 #include "Renderer/GraphicsPipeline.hpp"
@@ -111,8 +109,7 @@ public:
     static const std::vector<RenderCommand> &GetRenderCommands();
 
     static void Submit(RenderCommand renderCommand);
-    static void Submit(const Mesh &mesh, const Material &material, const Transform &transform);
-    static void Submit(std::string_view material, std::string_view mesh, const Transform &transform);
+    static void Submit(const Mesh &mesh, const Material &material, const Transform &transform, const TextureManager &textureManager);
 
     static void SetBasicShader(std::string_view identifier, std::string_view vertexShader, std::string_view fragmentShader);
 
@@ -127,7 +124,7 @@ public:
     static void SetProjectionMatrix(const glm::mat4 &matrix);
     static void SetViewMatrix(const glm::mat4 &matrix);
 
-    static void CreateGraphicsPipeline(std::string_view id);
+    static void CreateGraphicsPipeline(std::string_view identifier, ShaderManager &shaderManager);
 
     static uint32_t GetInputInt()
     {
@@ -170,9 +167,15 @@ public:
         return mCamera;
     }
 
+    static const Descriptor &GetTextureDescriptor()
+    {
+        return mTextureDescriptor;
+    }
+
 private:
     static uint32_t mInputInt;
 
+    static Descriptor mTextureDescriptor;
     static Descriptor mBufferDescriptor;
 
     static Sampler mSampler;

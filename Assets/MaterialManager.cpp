@@ -31,9 +31,9 @@ void MaterialManager::Clear()
     mMaterialMap.clear();
 }
 
-const std::unordered_map<std::string, Material> &MaterialManager::GetMap()
+const std::unordered_map<std::string, Material> &MaterialManager::GetMap() const
 {
     return MaterialManager::mMaterialMap;
 }
 
-std::unordered_map<std::string, Material> MaterialManager::mMaterialMap;
+// std::unordered_map<std::string, Material> MaterialManager::mMaterialMap;

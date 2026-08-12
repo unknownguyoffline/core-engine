@@ -11,14 +11,14 @@ void FontManager::Destroy(std::string_view identifier)
 {
 }
 
-const std::unordered_map<std::string, Font> &FontManager::GetMap()
+const std::unordered_map<std::string, Font> &FontManager::GetMap() const
 {
     return mFontMap;
 }
 
-const Font &FontManager::GetFont(std::string_view identifier)
+const Font &FontManager::GetFont(std::string_view identifier) const
 {
-    return mFontMap[identifier.data()];
+    return mFontMap.at(identifier.data());
 }
 
 bool FontManager::HasFont(std::string_view identifier)
@@ -31,6 +31,6 @@ void FontManager::Clear()
     mFontMap.clear();
 }
 
-std::unordered_map<std::string, Font> FontManager::mFontMap;
-FontImporter FontManager::mImporter;
-uint64_t FontManager::mLastId;
+// std::unordered_map<std::string, Font> FontManager::mFontMap;
+// FontImporter FontManager::mImporter;
+// uint64_t FontManager::mLastId;

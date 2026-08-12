@@ -8,9 +8,11 @@
 void Renderer::Initialize(const RendererSpecification &specification)
 {
     mSpecification = specification;
-    GraphicsContext::Initialize(mSpecification.deviceType);
 
-    TextureManager::Initialize();
+    // TextureManager::Initialize();
+
+    mTextureDescriptor.AddBindlessDescriptor(DescriptorType::CombinedSampler, ShaderStage::Fragment, 1024);
+    mTextureDescriptor.CreateDescriptor();
 
     mShadowMapDescriptor.AddBindlessDescriptor(DescriptorType::CombinedSampler, ShaderStage::Fragment, 1024);
     mShadowMapDescriptor.CreateDescriptor();
@@ -63,9 +65,9 @@ void Renderer::Initialize(const RendererSpecification &specification)
 
 void Renderer::Terminate()
 {
-    vkDeviceWaitIdle(GraphicsContext::GetDevice());
+    vkDeviceWaitIdle(GraphicsContext::GetCurrentContext().GetDevice());
 
-    TextureManager::Terminate();
+    // TextureManager::Terminate();
 
     DestroyImage(mSceneColorAttachment);
     DestroyImage(mSceneResolveAttachment);
@@ -120,7 +122,7 @@ void Renderer::EndFrame(const glm::vec4 &clearColor)
 
     mCommandBuffer.EndRecording();
 
-    mCommandBuffer.QueueSubmit(GraphicsContext::GetQueues().graphics);
+    mCommandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().graphics);
 }
 const glm::uvec2 &Renderer::GetResolution()
 {
@@ -154,7 +156,7 @@ Surface Renderer::CreateSurface(const Window &window, ImageFormat format)
 
 void Renderer::ResizeSurface(Surface &surface, ImageFormat format)
 {
-    vkDeviceWaitIdle(GraphicsContext::GetDevice());
+    vkDeviceWaitIdle(GraphicsContext::GetCurrentContext().GetDevice());
     for (auto &framebuffer : surface.frameBuffers)
     {
         framebuffer.DestroyFrameBuffer();
@@ -213,7 +215,7 @@ void Renderer::Present(Surface &surface)
     mPresentRenderPass.CmdEndRenderPass(mPresentCommandBuffer);
     mPresentCommandBuffer.EndRecording();
 
-    mPresentCommandBuffer.QueueSubmit(GraphicsContext::GetQueues().graphics, mImageAcquiredSemaphore, mSwapchainRenderFinished, PipelineStage::ColorAttachmentOutput);
+    mPresentCommandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().graphics, mImageAcquiredSemaphore, mSwapchainRenderFinished, PipelineStage::ColorAttachmentOutput);
 
     VkSwapchainKHR swapchain[] = {surface.swapchain.GetHandle()};
     VkSemaphore waitSemaphores[] = {mSwapchainRenderFinished.GetHandle()};
@@ -228,9 +230,9 @@ void Renderer::Present(Surface &surface)
             .pImageIndices = &imageIndex,
         };
 
-    vkQueuePresentKHR(GraphicsContext::GetQueues().graphics, &presentInfo);
+    vkQueuePresentKHR(GraphicsContext::GetCurrentContext().GetQueues().graphics, &presentInfo);
 
-    vkDeviceWaitIdle(GraphicsContext::GetDevice());
+    vkDeviceWaitIdle(GraphicsContext::GetCurrentContext().GetDevice());
 }
 
 const std::vector<RenderCommand> &Renderer::GetRenderCommands()
@@ -243,13 +245,13 @@ void Renderer::Submit(RenderCommand renderCommand)
     mRenderCommands.push_back(renderCommand);
 }
 
-void Renderer::Submit(const Mesh &mesh, const Material &material, const Transform &transform)
+void Renderer::Submit(const Mesh &mesh, const Material &material, const Transform &transform, const TextureManager &textureManager)
 {
     RenderCommand renderCommand;
     renderCommand.vertexBuffer = &mesh.GetVertexBuffer();
     renderCommand.indexBuffer = &mesh.GetIndexBuffer();
     renderCommand.descriptorCount = 3;
-    renderCommand.descriptors[0] = &TextureManager::GetDescriptor();
+    renderCommand.descriptors[0] = &mTextureDescriptor;
     renderCommand.descriptors[1] = &mBufferDescriptor;
     renderCommand.descriptors[2] = &mShadowMapDescriptor;
     renderCommand.pipeline = &mShaderPipelineMap[material.shader];
@@ -261,10 +263,10 @@ void Renderer::Submit(const Mesh &mesh, const Material &material, const Transfor
 
     PushConstantData data;
     data.model = transform.GetMatrix();
-    data.albedoIndex = TextureManager::GetTextureDescriptorIndex(material.albedoTexture);
-    data.roughnessIndex = TextureManager::GetTextureDescriptorIndex(material.roughnessTexture);
-    data.metallicIndex = TextureManager::GetTextureDescriptorIndex(material.metallicTexture);
-    data.normalIndex = TextureManager::GetTextureDescriptorIndex(material.normalTexture);
+    data.albedoIndex = textureManager.GetTextureDescriptorIndex(material.albedoTexture);
+    data.roughnessIndex = textureManager.GetTextureDescriptorIndex(material.roughnessTexture);
+    data.metallicIndex = textureManager.GetTextureDescriptorIndex(material.metallicTexture);
+    data.normalIndex = textureManager.GetTextureDescriptorIndex(material.normalTexture);
     data.inputInt = mInputInt;
     data.roughness = material.roughnessFactor;
     data.metallic = material.metallicFactor;
@@ -279,19 +281,14 @@ void Renderer::Submit(const Mesh &mesh, const Material &material, const Transfor
     mRenderCommands.push_back(renderCommand);
 }
 
-void Renderer::Submit(std::string_view material, std::string_view mesh, const Transform &transform)
-{
-    Submit(MeshManager::GetMesh(mesh), MaterialManager::GetMaterial(material), transform);
-}
-
 void Renderer::SetBasicShader(std::string_view identifier, std::string_view vertexShader, std::string_view fragmentShader)
 {
-    mBasicShaderID = ShaderManager::Load(identifier, vertexShader, fragmentShader);
+    // mBasicShaderID = ShaderManager::Load(identifier, vertexShader, fragmentShader);
 }
 
 std::string Renderer::GetBasicShaderID()
 {
-    return ShaderManager::GetBuiltinIdentifier().pbr.data();
+    // return ShaderManager::GetBuiltinIdentifier().pbr.data();
 }
 
 void Renderer::AddLight(const Light &light)
@@ -347,9 +344,9 @@ void Renderer::SetViewMatrix(const glm::mat4 &matrix)
     mUniformData.projection = matrix;
 }
 
-void Renderer::CreateGraphicsPipeline(std::string_view identifier)
+void Renderer::CreateGraphicsPipeline(std::string_view identifier, ShaderManager &shaderManager)
 {
-    const Shader &shader = ShaderManager::Get(identifier);
+    const Shader &shader = shaderManager.Get(identifier);
 
     GraphicsPipeline pipeline;
     pipeline.SetVertexShader(shader.vertex);
@@ -359,7 +356,7 @@ void Renderer::CreateGraphicsPipeline(std::string_view identifier)
         pipeline.SetGeometryShader(shader.geometry);
     }
 
-    pipeline.AddDescriptors(TextureManager::GetDescriptor());
+    pipeline.AddDescriptors(mTextureDescriptor);
     pipeline.AddDescriptors(mBufferDescriptor);
     pipeline.AddDescriptors(mShadowMapDescriptor);
     pipeline.SetCullMode(CullMode::Back);
@@ -458,15 +455,18 @@ void Renderer::CreateSceneAttachments()
 
 void Renderer::CreatePresentPipeline()
 {
+    // std::string fullscreenShader = ShaderManager::Load("fullscreen", "Shaders/fullscreen.vert.spv", "Shaders/fullscreen.frag.spv", "", "", false);
 
-    std::string fullscreenShader = ShaderManager::Load("fullscreen", "Shaders/fullscreen.vert.spv", "Shaders/fullscreen.frag.spv", "", "", false);
+    Shader shader;
+    shader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/fullscreen.vert.spv");
+    shader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/fullscreen.frag.spv");
 
     mPresentPipeline.AddDescriptors(mPresentInputDescriptor);
 
     mPresentPipeline.AddColorBlendAttachment(false);
 
-    mPresentPipeline.SetVertexShader(ShaderManager::Get(fullscreenShader).vertex);
-    mPresentPipeline.SetFragmentShader(ShaderManager::Get(fullscreenShader).fragment);
+    mPresentPipeline.SetVertexShader(shader.vertex);
+    mPresentPipeline.SetFragmentShader(shader.fragment);
 
     mPresentPipeline.SetCullMode(CullMode::None);
 
@@ -554,6 +554,7 @@ void Renderer::CmdDrawRenderCommand(const RenderCommand &renderCommand, const Re
     vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, renderCommand.instanceCount, 0, 0, 0);
 }
 
+Descriptor Renderer::mTextureDescriptor;
 FrameInfo Renderer::mFrameInfo;
 SampleCount Renderer::mSampleCount = SampleCount::Four;
 glm::uvec2 Renderer::mResolution = glm::uvec2(1920, 1080);

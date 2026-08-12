@@ -43,12 +43,12 @@ public:
 
     void SetName(std::string_view name)
     {
-        mName = name;
+        mFilename = name;
     }
 
-    const std::string &GetName() const
+    const std::string &GetFileName() const
     {
-        return mName;
+        return mFilename;
     }
 
     const std::vector<BezierCurve> &GetBezierCurve() const
@@ -69,7 +69,8 @@ public:
 private:
     std::unordered_map<char, Glyph> mCharaterImageMap;
     std::vector<BezierCurve> mCurves;
-    std::string mName;
+    std::string mFilename;
+
     float mFontSize = 0.f;
     float mMaxHeight = FLT_MIN;
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "Assets/ShaderManager.hpp"
 #include "Mesh.hpp"
 #include <Renderer/GraphicsPipeline.hpp>
 #include <glm/glm.hpp>
@@ -30,6 +31,8 @@ private:
         glm::vec3 position;
         glm::vec3 color;
     };
+
+    Shader mLineShader;
 
     std::vector<LineVertex> mLineVertices;
     std::vector<uint32_t> mLineIndices;

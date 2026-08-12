@@ -6,7 +6,7 @@
 class CommandBuffer
 {
 public:
-    void CreateCommandBuffer(VkCommandPool commandPool = GraphicsContext::GetCommandPool());
+    void CreateCommandBuffer(VkCommandPool commandPool = GraphicsContext::GetCurrentContext().GetCommandPool());
     void DestroyCommandBuffer();
 
     void BeginRecording(bool oneTimeSubmit = false);

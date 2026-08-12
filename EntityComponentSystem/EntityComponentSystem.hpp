@@ -1,4 +1,5 @@
 #pragma once
+#include "Assets/ResourceManager.hpp"
 #include "Renderer/Camera.hpp"
 #include <Vendor/entt/single_include/entt/entt.hpp>
 #include <functional>
@@ -10,7 +11,6 @@ struct EntityMetadata
 {
     std::string name;
     bool createdFromModel = false;
-    bool enableSerializing = false;
 };
 
 class Scene;
@@ -20,6 +20,10 @@ class Entity
 public:
     Entity() {};
     Entity(EntityID id, Scene *scene);
+    Entity(EntityID id, const Scene *scene)
+        : mId(id), mConstScene(scene)
+    {
+    }
     EntityID GetId() const
     {
         return mId;
@@ -56,6 +60,7 @@ private:
     friend class Scene;
     EntityID mId = (EntityID)UINT64_MAX;
     Scene *mScene = nullptr;
+    const Scene *mConstScene;
 };
 
 class Scene
@@ -94,16 +99,17 @@ public:
     }
 
     template <typename ComponentType>
-    void Each(const std::function<void(Entity, const ComponentType &component)> &callback) const
+    void Each(const std::function<void(const Entity, const ComponentType &component)> &callback) const
     {
-        const auto view = mRegistry.view<ComponentType>();
+        const auto &view = mRegistry.view<ComponentType>();
         view.each([&](const entt::entity &id, const ComponentType &component) {
-            callback({id, this}, component);
+            Entity entity(id, this);
+            callback(entity, component);
         });
     }
 
     template <typename ComponentType>
-    bool HasComponent(Entity entity)
+    bool HasComponent(Entity entity) const
     {
         return mRegistry.all_of<ComponentType>(entity.mId);
     }
@@ -118,7 +124,18 @@ public:
         return mCamera;
     }
 
+    ResourceManager &GetResourceManager()
+    {
+        return mResourceManager;
+    }
+
+    const ResourceManager &GetResourceManager() const
+    {
+        return mResourceManager;
+    }
+
 private:
+    ResourceManager mResourceManager;
     entt::registry mRegistry;
     Camera mCamera;
 };
@@ -132,7 +149,7 @@ ComponentType &Entity::GetComponent()
 template <typename ComponentType>
 const ComponentType &Entity::GetComponent() const
 {
-    return mScene->GetComponent<ComponentType>(*this);
+    return mConstScene->GetComponent<ComponentType>(*this);
 }
 
 template <typename ComponentType, typename... Args>
@@ -144,5 +161,5 @@ ComponentType &Entity::AddComponent(Args... args)
 template <typename ComponentType>
 inline bool Entity::HasComponent() const
 {
-    return mScene->HasComponent<ComponentType>(*this);
+    return mConstScene->HasComponent<ComponentType>(*this);
 }
