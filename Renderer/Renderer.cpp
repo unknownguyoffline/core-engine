@@ -76,7 +76,6 @@ void Renderer::Terminate()
     mCommandBuffer.DestroyCommandBuffer();
     mPresentCommandBuffer.DestroyCommandBuffer();
     mPresentInputDescriptor.DestroyDescriptor();
-    mPresentPipeline.DestroyPipeline();
     mPresentRenderPass.DestroyRenderPass();
 
     mUniformBuffer.DestroyUniformBuffer();
@@ -106,6 +105,7 @@ void Renderer::EndFrame(const glm::vec4 &clearColor)
     mFrameInfo = FrameInfo();
 
     mCommandBuffer.BeginRecording();
+
     VkClearValue vkClearColor = {clearColor.r, clearColor.g, clearColor.b, clearColor.a};
     mSceneRenderPass.CmdBeginRenderPass(mCommandBuffer, mSceneFrameBuffer, mResolution, {vkClearColor, vkClearColor, {1, 1, 1, 1}, {1, 1, 1, 1}});
 
@@ -113,7 +113,6 @@ void Renderer::EndFrame(const glm::vec4 &clearColor)
 
     for (const auto &[index, renderCommand] : mRenderCommands | std::views::enumerate)
     {
-
         CmdDrawRenderCommand(renderCommand, mPreviousCommand);
         mPreviousCommand = renderCommand;
     }
@@ -206,9 +205,9 @@ void Renderer::Present(Surface &surface)
     vkCmdSetDepthWriteEnable(mPresentCommandBuffer.GetHandle(), false);
 
     VkDescriptorSet descriptorSets[] = {mPresentInputDescriptor.GetDescriptorSet()};
-    vkCmdBindDescriptorSets(mPresentCommandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPresentPipeline.GetPipelineLayout(), 0, 1, descriptorSets, 0, nullptr);
+    vkCmdBindDescriptorSets(mPresentCommandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPresentShader.GetGraphicsPipeline().GetPipelineLayout(), 0, 1, descriptorSets, 0, nullptr);
 
-    mPresentPipeline.CmdBindPipeline(mPresentCommandBuffer);
+    mPresentShader.GetGraphicsPipeline().CmdBindPipeline(mPresentCommandBuffer);
 
     vkCmdDraw(mPresentCommandBuffer.GetHandle(), 6, 1, 0, 0);
 
@@ -235,6 +234,18 @@ void Renderer::Present(Surface &surface)
     vkDeviceWaitIdle(GraphicsContext::GetCurrentContext().GetDevice());
 }
 
+void Renderer::SetupSceneShader(Shader &shader)
+{
+    shader.AddColorBlendAttachment(0);
+    shader.AddDescriptor(Renderer::GetTextureDescriptor(), Renderer::GetBufferDescriptor(), Renderer::GetShadowMapDescriptor());
+    shader.AddLayout(Vertex::GetVertexLayout(0, 0));
+    shader.SetPushConstantSize(sizeof(PushConstantData));
+    shader.GetSettings().cullMode = CullMode::Back;
+    shader.GetSettings().enableDepthTest = true;
+    shader.GetSettings().enableDepthWrite = true;
+    shader.GetSettings().sampleCount = Renderer::GetSampleCount();
+}
+
 const std::vector<RenderCommand> &Renderer::GetRenderCommands()
 {
     return mRenderCommands;
@@ -245,7 +256,7 @@ void Renderer::Submit(RenderCommand renderCommand)
     mRenderCommands.push_back(renderCommand);
 }
 
-void Renderer::Submit(const Mesh &mesh, const Material &material, const Transform &transform, const TextureManager &textureManager)
+void Renderer::Submit(const Mesh &mesh, const Material &material, const Transform &transform, const TextureManager &textureManager, const ShaderManager &shaderManager)
 {
     RenderCommand renderCommand;
     renderCommand.vertexBuffer = &mesh.GetVertexBuffer();
@@ -254,7 +265,7 @@ void Renderer::Submit(const Mesh &mesh, const Material &material, const Transfor
     renderCommand.descriptors[0] = &mTextureDescriptor;
     renderCommand.descriptors[1] = &mBufferDescriptor;
     renderCommand.descriptors[2] = &mShadowMapDescriptor;
-    renderCommand.pipeline = &mShaderPipelineMap[material.shader];
+    renderCommand.pipeline = &shaderManager.Get(material.shader).GetGraphicsPipeline();
     renderCommand.indexCount = mesh.mIndexSize / sizeof(uint32_t);
 
     renderCommand.pipelineSettings.cullMode = material.cullMode;
@@ -279,16 +290,6 @@ void Renderer::Submit(const Mesh &mesh, const Material &material, const Transfor
     renderCommand.debugName = "Mesh Material";
 
     mRenderCommands.push_back(renderCommand);
-}
-
-void Renderer::SetBasicShader(std::string_view identifier, std::string_view vertexShader, std::string_view fragmentShader)
-{
-    // mBasicShaderID = ShaderManager::Load(identifier, vertexShader, fragmentShader);
-}
-
-std::string Renderer::GetBasicShaderID()
-{
-    // return ShaderManager::GetBuiltinIdentifier().pbr.data();
 }
 
 void Renderer::AddLight(const Light &light)
@@ -348,32 +349,32 @@ void Renderer::CreateGraphicsPipeline(std::string_view identifier, ShaderManager
 {
     const Shader &shader = shaderManager.Get(identifier);
 
-    GraphicsPipeline pipeline;
-    pipeline.SetVertexShader(shader.vertex);
-    pipeline.SetFragmentShader(shader.fragment);
-    if (shader.vertex != VK_NULL_HANDLE)
-    {
-        pipeline.SetGeometryShader(shader.geometry);
-    }
+    // GraphicsPipeline pipeline;
+    // pipeline.SetVertexShader(shader.vertex);
+    // pipeline.SetFragmentShader(shader.fragment);
+    // if (shader.vertex != VK_NULL_HANDLE)
+    // {
+    //     pipeline.SetGeometryShader(shader.geometry);
+    // }
 
-    pipeline.AddDescriptors(mTextureDescriptor);
-    pipeline.AddDescriptors(mBufferDescriptor);
-    pipeline.AddDescriptors(mShadowMapDescriptor);
-    pipeline.SetCullMode(CullMode::Back);
-    pipeline.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
-    pipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(Vertex, position));
-    pipeline.AddAttribute(0, 1, ImageFormat::RG32, offsetof(Vertex, uv));
-    pipeline.AddAttribute(0, 2, ImageFormat::RGB32, offsetof(Vertex, normal));
-    pipeline.AddAttribute(0, 3, ImageFormat::RGB32, offsetof(Vertex, tangent));
-    pipeline.AddAttribute(0, 4, ImageFormat::RGB32, offsetof(Vertex, bitangent));
-    pipeline.EnableDepthWrite(true);
-    pipeline.EnableDepthTesting(true);
-    pipeline.SetMultisampleCount(mSampleCount);
-    pipeline.SetPushConstant(ShaderStage::All, sizeof(PushConstantData));
-    pipeline.AddColorBlendAttachment(true);
-    pipeline.CreatePipeline(mSceneRenderPass, 0);
+    // pipeline.AddDescriptors(mTextureDescriptor);
+    // pipeline.AddDescriptors(mBufferDescriptor);
+    // pipeline.AddDescriptors(mShadowMapDescriptor);
+    // pipeline.SetCullMode(CullMode::Back);
+    // pipeline.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
+    // pipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(Vertex, position));
+    // pipeline.AddAttribute(0, 1, ImageFormat::RG32, offsetof(Vertex, uv));
+    // pipeline.AddAttribute(0, 2, ImageFormat::RGB32, offsetof(Vertex, normal));
+    // pipeline.AddAttribute(0, 3, ImageFormat::RGB32, offsetof(Vertex, tangent));
+    // pipeline.AddAttribute(0, 4, ImageFormat::RGB32, offsetof(Vertex, bitangent));
+    // pipeline.EnableDepthWrite(true);
+    // pipeline.EnableDepthTesting(true);
+    // pipeline.SetSampleCount(mSampleCount);
+    // pipeline.SetPushConstant(ShaderStage::All, sizeof(PushConstantData));
+    // pipeline.AddColorBlendAttachment(true);
+    // pipeline.CreatePipeline(mSceneRenderPass, 0);
 
-    mShaderPipelineMap[identifier.data()] = pipeline;
+    // mShaderPipelineMap[identifier.data()] = pipeline;
 }
 RenderPass &Renderer::GetRenderPass()
 {
@@ -455,22 +456,10 @@ void Renderer::CreateSceneAttachments()
 
 void Renderer::CreatePresentPipeline()
 {
-    // std::string fullscreenShader = ShaderManager::Load("fullscreen", "Shaders/fullscreen.vert.spv", "Shaders/fullscreen.frag.spv", "", "", false);
-
-    Shader shader;
-    shader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/fullscreen.vert.spv");
-    shader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/fullscreen.frag.spv");
-
-    mPresentPipeline.AddDescriptors(mPresentInputDescriptor);
-
-    mPresentPipeline.AddColorBlendAttachment(false);
-
-    mPresentPipeline.SetVertexShader(shader.vertex);
-    mPresentPipeline.SetFragmentShader(shader.fragment);
-
-    mPresentPipeline.SetCullMode(CullMode::None);
-
-    mPresentPipeline.CreatePipeline(mPresentRenderPass, 0);
+    mPresentShader.AddDescriptor(mPresentInputDescriptor);
+    mPresentShader.AddColorBlendAttachment(false);
+    mPresentShader.GetSettings().cullMode = CullMode::None;
+    mPresentShader.Load("Shaders/fullscreen.vert.spv", "Shaders/fullscreen.frag.spv", mSceneRenderPass, 0);
 }
 
 void Renderer::CreatePresentRenderPass()
@@ -486,7 +475,6 @@ void Renderer::CreatePresentRenderPass()
 
 void Renderer::CmdDrawRenderCommand(const RenderCommand &renderCommand, const RenderCommand &previousCommand)
 {
-
     if (renderCommand.pipeline != previousCommand.pipeline)
     {
         renderCommand.pipeline->CmdBindPipeline(mCommandBuffer);
@@ -566,7 +554,7 @@ CommandBuffer Renderer::mCommandBuffer;
 RendererSpecification Renderer::mSpecification;
 Semaphore Renderer::mImageAcquiredSemaphore;
 Semaphore Renderer::mSwapchainRenderFinished;
-GraphicsPipeline Renderer::mPresentPipeline;
+Shader Renderer::mPresentShader;
 RenderPass Renderer::mPresentRenderPass;
 CommandBuffer Renderer::mPresentCommandBuffer;
 Descriptor Renderer::mPresentInputDescriptor;

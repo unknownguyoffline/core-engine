@@ -5,8 +5,18 @@
 
 struct TextVertex
 {
-    glm::vec3 position;
-    glm::vec2 uv;
+    glm::vec3 position = glm::vec3(0);
+    glm::vec2 uv = glm::vec2(0);
+
+    static VertexLayout GetLayout(uint32_t binding, uint32_t startLocation)
+    {
+        VertexLayout layout;
+        layout.attributes.emplace_back(binding, startLocation + 0, offsetof(TextVertex, position), ImageFormat::RGB32);
+        layout.attributes.emplace_back(binding, startLocation + 1, offsetof(TextVertex, uv), ImageFormat::RG32);
+        layout.bindings.emplace_back(binding, sizeof(TextVertex), InputRate::Vertex);
+
+        return layout;
+    }
 };
 
 void TextRenderer::Initialize()
@@ -54,11 +64,7 @@ void TextRenderer::Initialize()
 
     // mQuadMeshId = MeshManager::CreateMesh(vertices, indices);
 
-    mShader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/bezier.vert.spv");
-    mShader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/bezier.frag.spv");
-
     mUniformBuffer = UniformBuffer(sizeof(TextUniformData), &mUniformData);
-
     mUniformDescriptor.AddDescriptor(DescriptorType::Uniform, ShaderStage::Vertex);
     mUniformDescriptor.CreateDescriptor();
     mUniformDescriptor.UpdateBuffer(mUniformBuffer.GetBuffer(), 0);
@@ -66,20 +72,16 @@ void TextRenderer::Initialize()
     mBezierDescriptor.AddDescriptor(DescriptorType::StorageBuffer, ShaderStage::Fragment);
     mBezierDescriptor.CreateDescriptor();
 
-    mTextPipeline.AddBinding(0, sizeof(TextVertex), InputRate::Vertex);
-    mTextPipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(Vertex, position));
-    mTextPipeline.AddAttribute(0, 1, ImageFormat::RG32, offsetof(Vertex, uv));
-    mTextPipeline.AddBinding(1, sizeof(TextInstanceData), InputRate::Instance);
-    mTextPipeline.AddAttribute(1, 2, ImageFormat::RGBA32, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 0));
-    mTextPipeline.AddAttribute(1, 3, ImageFormat::RGBA32, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 1));
-    mTextPipeline.AddAttribute(1, 4, ImageFormat::RGBA32, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 2));
-    mTextPipeline.AddAttribute(1, 5, ImageFormat::RGBA32, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 3));
-    mTextPipeline.AddAttribute(1, 6, ImageFormat::RGBA32, offsetof(TextInstanceData, forgroundColor));
-    mTextPipeline.AddAttribute(1, 7, ImageFormat::RGBA32, offsetof(TextInstanceData, backgroundColor));
-    mTextPipeline.AddAttribute(1, 8, ImageFormat::R32U, offsetof(TextInstanceData, startIndex));
-    mTextPipeline.AddAttribute(1, 9, ImageFormat::R32U, offsetof(TextInstanceData, count));
-    mTextPipeline.AddDescriptors(mUniformDescriptor);
-    mTextPipeline.AddDescriptors(mBezierDescriptor);
+    mShader.AddDescriptor(mUniformDescriptor, mBezierDescriptor);
+    mShader.AddLayout(TextVertex::GetLayout(0, 0));
+    mShader.AddLayout(TextInstanceData::GetLayout(1, 2));
+    mShader.AddColorBlendAttachment(true);
+    mShader.SetPushConstantSize(sizeof(TextPushConstant));
+    mShader.GetSettings().cullMode = CullMode::None;
+    mShader.GetSettings().enableDepthTest = true;
+    mShader.GetSettings().enableDepthWrite = true;
+    mShader.GetSettings().sampleCount = Renderer::GetSampleCount();
+    mShader.Load("Shaders/bezier.vert.spv", "Shaders/bezier.frag.spv", Renderer::GetRenderPass(), 0);
 
     mTextPipeline.AddColorBlendAttachment(true);
 
@@ -89,12 +91,9 @@ void TextRenderer::Initialize()
     mTextPipeline.EnableDepthWrite(false);
     mTextPipeline.SetCullMode(CullMode::None);
 
-    mTextPipeline.SetVertexShader(mShader.vertex);
-    mTextPipeline.SetFragmentShader(mShader.fragment);
+    mTextPipeline.SetSampleCount(Renderer::GetSampleCount());
 
-    mTextPipeline.SetMultisampleCount(Renderer::GetSampleCount());
-
-    mTextPipeline.CreatePipeline(Renderer::GetRenderPass(), 0);
+    mTextPipeline.CreatePipeline(Renderer::GetRenderPass(), 1);
 }
 
 void TextRenderer::Terminate()

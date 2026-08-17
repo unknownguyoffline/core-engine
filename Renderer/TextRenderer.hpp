@@ -17,6 +17,22 @@ struct TextInstanceData
     glm::vec4 backgroundColor = glm::vec4(1.0);
     uint32_t startIndex = 0;
     uint32_t count = 0;
+
+    static VertexLayout GetLayout(uint32_t binding, uint32_t startLocation)
+    {
+        VertexLayout layout;
+        layout.attributes.emplace_back(binding, startLocation + 0, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 0), ImageFormat::RGBA32);
+        layout.attributes.emplace_back(binding, startLocation + 1, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 1), ImageFormat::RGBA32);
+        layout.attributes.emplace_back(binding, startLocation + 2, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 2), ImageFormat::RGBA32);
+        layout.attributes.emplace_back(binding, startLocation + 3, offsetof(TextInstanceData, model) + (sizeof(glm::vec4) * 3), ImageFormat::RGBA32);
+        layout.attributes.emplace_back(binding, startLocation + 4, offsetof(TextInstanceData, forgroundColor), ImageFormat::RGBA32);
+        layout.attributes.emplace_back(binding, startLocation + 5, offsetof(TextInstanceData, backgroundColor), ImageFormat::RGBA32);
+        layout.attributes.emplace_back(binding, startLocation + 6, offsetof(TextInstanceData, startIndex), ImageFormat::R32U);
+        layout.attributes.emplace_back(binding, startLocation + 7, offsetof(TextInstanceData, count), ImageFormat::RG32U);
+        layout.bindings.emplace_back(binding, sizeof(TextInstanceData), InputRate::Instance);
+
+        return layout;
+    }
 };
 
 struct TextUniformData

@@ -1,5 +1,6 @@
 #pragma once
 #include "Utility.hpp"
+#include "Vertex.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -18,6 +19,21 @@ struct Vertex
     {
     }
     Vertex() = default;
+
+    static VertexLayout GetVertexLayout(uint32_t binding, uint32_t startLocation)
+    {
+        VertexLayout layout;
+
+        layout.attributes.emplace_back(binding, 0 + startLocation, offsetof(Vertex, position), ImageFormat::RGB32);
+        layout.attributes.emplace_back(binding, 1 + startLocation, offsetof(Vertex, uv), ImageFormat::RG32);
+        layout.attributes.emplace_back(binding, 2 + startLocation, offsetof(Vertex, normal), ImageFormat::RGB32);
+        layout.attributes.emplace_back(binding, 3 + startLocation, offsetof(Vertex, tangent), ImageFormat::RGB32);
+        layout.attributes.emplace_back(binding, 4 + startLocation, offsetof(Vertex, bitangent), ImageFormat::RGB32);
+
+        layout.bindings.emplace_back(binding, sizeof(Vertex), InputRate::Vertex);
+
+        return layout;
+    }
 };
 
 class Mesh
@@ -52,6 +68,36 @@ public:
 
     static void Initialize();
 
+    size_t GetVertexSize() const
+    {
+        return mVertexSize;
+    }
+
+    size_t GetIndexSize() const
+    {
+        return mIndexSize;
+    }
+
+    bool IsStandardMesh() const
+    {
+        return mStandardMesh;
+    }
+
+    const glm::vec3 &GetMinVertex() const
+    {
+        return mMinVertex;
+    }
+
+    const glm::vec3 &GetMaxVertex() const
+    {
+        return mMaxVertex;
+    }
+
+    const glm::vec3 &GetCenter() const
+    {
+        return mCenter;
+    }
+
 private:
     std::string mName;
 
@@ -66,5 +112,10 @@ private:
     Buffer mVertexBuffer;
     Buffer mIndexBuffer;
 
+    glm::vec3 mMinVertex = glm::vec3(FLT_MAX);
+    glm::vec3 mMaxVertex = glm::vec3(FLT_MIN);
+    glm::vec3 mCenter = glm::vec3(0);
+
+    bool mStandardMesh = false;
     bool mIsValid = false;
 };

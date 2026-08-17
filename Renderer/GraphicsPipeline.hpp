@@ -25,7 +25,7 @@ public:
 
     void SetCullMode(CullMode cullMode);
     void SetPrimitive(PrimitiveType primitive);
-    void SetMultisampleCount(SampleCount count);
+    void SetSampleCount(SampleCount count);
     void SetFrontFace(FrontFace frontFace);
     void SetViewport(const VkViewport &viewport);
 

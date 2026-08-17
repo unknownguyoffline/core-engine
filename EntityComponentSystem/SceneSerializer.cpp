@@ -1,5 +1,6 @@
 #include "SceneSerializer.hpp"
 #include "EntityComponentSystem/Component.hpp"
+#include "Renderer/Renderer.hpp"
 #include "Renderer/Transform.hpp"
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -33,11 +34,16 @@ json::array_t SerializeShaderManager(const ShaderManager &shaderManager)
     for (const auto &[id, shader] : shaderManager.GetMap())
     {
         json shaderJson;
-        shaderJson["vertexPath"] = shader.vertexPath;
-        shaderJson["fragmentPath"] = shader.fragmentPath;
-        shaderJson["geometryPath"] = shader.geometryPath;
-        shaderJson["tessellationPath"] = shader.tessellationPath;
+        shaderJson["vertexPath"] = shader.GetVertexFilename();
+        shaderJson["fragmentPath"] = shader.GetFragmentFilename();
+        shaderJson["geometryPath"] = shader.GetGeometryFilename();
+        shaderJson["tessellationPath"] = shader.GetTessellationFilename();
         shaderJson["id"] = id;
+        shaderJson["enableDepthWrite"] = shader.GetSettings().enableDepthWrite;
+        shaderJson["enableDepthTest"] = shader.GetSettings().enableDepthTest;
+        shaderJson["primitive"] = shader.GetSettings().primitive;
+        shaderJson["cullMode"] = shader.GetSettings().cullMode;
+        shaderJson["sampleCount"] = shader.GetSettings().sampleCount;
 
         shaderArray.push_back(shaderJson);
     }
@@ -82,6 +88,7 @@ json::array_t SerializeMaterialManager(const MaterialManager &materialManager)
         materialJson["enableBlending"] = material.enableBlending;
         materialJson["name"] = material.name;
         materialJson["id"] = id;
+        materialJson["drawPriority"] = material.drawPriority;
 
         materialArray.push_back(materialJson);
     }
@@ -105,14 +112,14 @@ json::array_t SerializeMeshManager(const MeshManager &meshManager)
         fwrite(mesh.GetIndexData(), mesh.GetIndexBuffer().capacity, 1, indexFile);
 
         json meshJson;
-        meshJson["vertexSize"] = mesh.GetVertexBuffer().capacity;
+        meshJson["vertexSize"] = mesh.GetVertexSize();
         meshJson["vertexOffset"] = vertexOffset;
-        meshJson["indexSize"] = mesh.GetIndexBuffer().capacity;
+        meshJson["indexSize"] = mesh.GetIndexSize();
         meshJson["indexOffset"] = indexOffset;
         meshJson["id"] = id;
 
-        vertexOffset += ftell(vertexFile);
-        indexOffset += ftell(indexFile);
+        vertexOffset += mesh.GetVertexSize();
+        indexOffset += mesh.GetIndexSize();
 
         meshArray.push_back(meshJson);
     }
@@ -240,7 +247,12 @@ void DeserializeShaderManager(const json::array_t &shaderJsonArray, ShaderManage
         std::string geometryPath = json["geometryPath"];
         std::string tessellationPath = json["tessellationPath"];
         std::string id = json["id"];
-        shaderManager.Load(id, vertexPath, fragmentPath, true);
+        shaderManager.Load(id, vertexPath, fragmentPath, geometryPath, tessellationPath, [&](Shader &shader) {
+            Renderer::SetupSceneShader(shader);
+            shader.GetSettings().cullMode = json["cullMode"];
+            shader.GetSettings().enableDepthTest = json["enableDepthTest"];
+            shader.GetSettings().enableDepthWrite = json["enableDepthWrite"];
+        });
     }
 }
 
@@ -273,6 +285,7 @@ void DeserializeMaterialManager(const json::array_t &materialJsonArray, Material
         material.enableDepthTest = json["enableDepthTest"];
         material.enableBlending = json["enableBlending"];
         material.name = json["name"];
+        material.drawPriority = json["drawPriority"];
 
         std::string id = json["id"];
         materialManager.AddMaterial(material, id);
@@ -310,6 +323,11 @@ void DeserializeMeshManager(const json::array_t &meshJsonArray, MeshManager &mes
         size_t indexSize = json["indexSize"];
         size_t indexOffset = json["indexOffset"];
 
+        assert(vertexSize <= vertexTotalSize);
+        assert(vertexOffset + vertexSize <= vertexTotalSize);
+        assert(indexSize <= indexTotalSize);
+        assert(indexOffset + indexSize <= indexTotalSize);
+
         vertexSize /= sizeof(Vertex);
         vertexOffset /= sizeof(Vertex);
         indexSize /= sizeof(uint32_t);
@@ -326,6 +344,9 @@ void DeserializeMeshManager(const json::array_t &meshJsonArray, MeshManager &mes
         std::string id = json["id"];
         meshManager.CreateMesh(vertices, indices, id);
     }
+
+    delete vertexData;
+    delete indexData;
 }
 
 Transform DeserializeTransform(const json &json)
@@ -439,6 +460,7 @@ void SceneSerializer::Import(std::string_view filename, Scene &scene)
     {
         DeserializeShaderManager(json["shaders"], scene.GetResourceManager().GetShaderManager());
     }
+
     if (json.contains("entities"))
     {
         DeserializeEntities(json["entities"], scene);

@@ -27,47 +27,19 @@ void Light::Initialize()
     mDescriptor.CreateDescriptor();
     mDescriptor.UpdateBuffer(mUniformBuffer.GetBuffer(), 0);
 
-    // std::string pointLightShader = ShaderManager::Load("point", "Shaders/shadow.vert.spv", "Shaders/shadow.frag.spv", "Shaders/shadow.geom.spv", "", false);
+    mPointLightPipeline.AddDescriptor(mDescriptor, Renderer::GetTextureDescriptor());
+    mPointLightPipeline.AddLayout(Vertex::GetVertexLayout(0, 0));
+    mPointLightPipeline.SetPushConstantSize(sizeof(PushConstantData));
+    mPointLightPipeline.GetSettings().cullMode = CullMode::None;
+    mPointLightPipeline.AddColorBlendAttachment(0);
+    mPointLightPipeline.Load("Shaders/shadow.vert.spv", "Shaders/shadow.frag.spv", "Shaders/shadow.geom.spv", "", mRenderPass, 0);
 
-    mPointShader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/shadow.vert.spv");
-    mPointShader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/shadow.frag.spv");
-    mPointShader.geometry = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/shadow.geom.spv");
-
-    mPointLightPipeline.SetVertexShader(mPointShader.vertex);
-    mPointLightPipeline.SetFragmentShader(mPointShader.fragment);
-    mPointLightPipeline.SetGeometryShader(mPointShader.geometry);
-    mPointLightPipeline.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
-    mPointLightPipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(Vertex, position));
-    mPointLightPipeline.AddAttribute(0, 1, ImageFormat::RG32, offsetof(Vertex, uv));
-    mPointLightPipeline.AddAttribute(0, 2, ImageFormat::RGB32, offsetof(Vertex, normal));
-    mPointLightPipeline.EnableDepthTesting(true);
-    mPointLightPipeline.EnableDepthWrite(true);
-    mPointLightPipeline.AddDescriptors(mDescriptor);
-    mPointLightPipeline.AddDescriptors(Renderer::GetTextureDescriptor());
-    mPointLightPipeline.SetCullMode(CullMode::Back);
-    mPointLightPipeline.SetPushConstant(ShaderStage::All, sizeof(PushConstantData));
-    mPointLightPipeline.CreatePipeline(mRenderPass, 0);
-
-    // std::string directionalLightShader = ShaderManager::Load("directional", "Shaders/directional.vert.spv", "Shaders/directional.frag.spv", "Shaders/directional.geom.spv", "", false);
-
-    mDirectionalShader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/directional.vert.spv");
-    mDirectionalShader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/directional.frag.spv");
-    mDirectionalShader.geometry = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/directional.geom.spv");
-
-    mDirectionalShadowPipeline.SetVertexShader(mDirectionalShader.vertex);
-    mDirectionalShadowPipeline.SetFragmentShader(mDirectionalShader.fragment);
-    mDirectionalShadowPipeline.SetGeometryShader(mDirectionalShader.geometry);
-    mDirectionalShadowPipeline.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
-    mDirectionalShadowPipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(Vertex, position));
-    mDirectionalShadowPipeline.AddAttribute(0, 1, ImageFormat::RG32, offsetof(Vertex, uv));
-    mDirectionalShadowPipeline.AddAttribute(0, 2, ImageFormat::RGB32, offsetof(Vertex, normal));
-    mDirectionalShadowPipeline.EnableDepthTesting(true);
-    mDirectionalShadowPipeline.EnableDepthWrite(true);
-    mDirectionalShadowPipeline.AddDescriptors(mDescriptor);
-    mDirectionalShadowPipeline.AddDescriptors(Renderer::GetTextureDescriptor());
-    mDirectionalShadowPipeline.SetCullMode(CullMode::None);
-    mDirectionalShadowPipeline.SetPushConstant(ShaderStage::All, sizeof(PushConstantData));
-    mDirectionalShadowPipeline.CreatePipeline(mRenderPass, 0);
+    mDirectionalShadowPipeline.AddDescriptor(mDescriptor, Renderer::GetTextureDescriptor());
+    mDirectionalShadowPipeline.AddLayout(Vertex::GetVertexLayout(0, 0));
+    mDirectionalShadowPipeline.SetPushConstantSize(sizeof(PushConstantData));
+    mDirectionalShadowPipeline.GetSettings().cullMode = CullMode::None;
+    mDirectionalShadowPipeline.AddColorBlendAttachment(0);
+    mDirectionalShadowPipeline.Load("Shaders/directional.vert.spv", "Shaders/directional.frag.spv", "Shaders/directional.geom.spv", "", mRenderPass, 0);
 
     mCommandBuffer.CreateCommandBuffer();
     mSampler.CreateSampler();
@@ -76,8 +48,8 @@ void Light::Initialize()
 void Light::Terminate()
 {
     mCommandBuffer.DestroyCommandBuffer();
-    mPointLightPipeline.DestroyPipeline();
-    mDirectionalShadowPipeline.DestroyPipeline();
+    mPointLightPipeline.Destroy();
+    mDirectionalShadowPipeline.Destroy();
     mRenderPass.DestroyRenderPass();
     mDescriptor.DestroyDescriptor();
     mUniformBuffer.DestroyUniformBuffer();
@@ -152,8 +124,8 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 
     mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[0], mShadowMap.size, {{1.f, 1.f, 1.f, 1.f}});
 
-    CmdBindDescriptors(mCommandBuffer, mPointLightPipeline, {&mDescriptor, &Renderer::GetTextureDescriptor()});
-    mPointLightPipeline.CmdBindPipeline(mCommandBuffer);
+    CmdBindDescriptors(mCommandBuffer, mPointLightPipeline.GetGraphicsPipeline(), {&mDescriptor, &Renderer::GetTextureDescriptor()});
+    mPointLightPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
 
     for (const RenderCommand &renderCommand : renderCommands)
     {
@@ -183,7 +155,8 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
         vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
         vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
 
-        vkCmdPushConstants(mCommandBuffer.GetHandle(), mPointLightPipeline.GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
+        if (renderCommand.pushContantSize != 0)
+            vkCmdPushConstants(mCommandBuffer.GetHandle(), mPointLightPipeline.GetGraphicsPipeline().GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
         vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, 1, 0, 0, 0);
     }
 
@@ -197,10 +170,10 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 }
 void Light::GenerateDirectionalLightShadowMap(const std::vector<RenderCommand> &renderCommands)
 {
-    // if (!mShadowMapOutdated)
-    // {
-    //     return;
-    // }
+    if (!mShadowMapOutdated)
+    {
+        return;
+    }
 
     int cascadeCount = 4;
     if (mIsCubeMap || mShadowMap.handle == VK_NULL_HANDLE)
@@ -229,8 +202,8 @@ void Light::GenerateDirectionalLightShadowMap(const std::vector<RenderCommand> &
 
     mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[0], mShadowMap.size, {{1.f, 1.f, 1.f, 1.f}});
 
-    CmdBindDescriptors(mCommandBuffer, mDirectionalShadowPipeline, std::initializer_list<const Descriptor *>{&mDescriptor, &Renderer::GetTextureDescriptor()});
-    mDirectionalShadowPipeline.CmdBindPipeline(mCommandBuffer);
+    CmdBindDescriptors(mCommandBuffer, mDirectionalShadowPipeline.GetGraphicsPipeline(), std::initializer_list<const Descriptor *>{&mDescriptor, &Renderer::GetTextureDescriptor()});
+    mDirectionalShadowPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
 
     for (const RenderCommand &renderCommand : renderCommands)
     {
@@ -254,7 +227,7 @@ void Light::GenerateDirectionalLightShadowMap(const std::vector<RenderCommand> &
         vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_FRONT_BIT);
         vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
         vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
-        vkCmdPushConstants(mCommandBuffer.GetHandle(), mDirectionalShadowPipeline.GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
+        vkCmdPushConstants(mCommandBuffer.GetHandle(), mDirectionalShadowPipeline.GetGraphicsPipeline().GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
 
         vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, 1, 0, 0, 0);
     }
@@ -495,12 +468,10 @@ LightType Light::GetType() const
 }
 
 CommandBuffer Light::mCommandBuffer;
-GraphicsPipeline Light::mPointLightPipeline;
-GraphicsPipeline Light::mDirectionalShadowPipeline;
+Shader Light::mPointLightPipeline;
+Shader Light::mDirectionalShadowPipeline;
 RenderPass Light::mRenderPass;
 Descriptor Light::mDescriptor;
 UniformBuffer Light::mUniformBuffer;
 ShadowMapUniformData Light::mUniformData;
 Sampler Light::mSampler;
-Shader Light::mPointShader;
-Shader Light::mDirectionalShader;

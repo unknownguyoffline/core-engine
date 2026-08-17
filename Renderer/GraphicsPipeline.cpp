@@ -84,7 +84,7 @@ void GraphicsPipeline::SetPrimitive(PrimitiveType primitive)
     mPrimitive = GetVulkanPrimitive(primitive);
 }
 
-void GraphicsPipeline::SetMultisampleCount(SampleCount count)
+void GraphicsPipeline::SetSampleCount(SampleCount count)
 {
     CHROME_TRACE_FUNCTION();
     mSampleCount = GetVulkanSampleCount(count);

@@ -5,19 +5,12 @@
 
 void DebugRenderer::Initialize()
 {
-    mLineShader.vertex = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/debugLine.vert.spv");
-    mLineShader.fragment = CreateShaderFromFile(GraphicsContext::GetCurrentContext().GetDevice(), "Shaders/debugLine.frag.spv");
-
-    mLinePipeline.SetVertexShader(mLineShader.vertex);
-    mLinePipeline.SetFragmentShader(mLineShader.fragment);
-    mLinePipeline.AddBinding(0, sizeof(LineVertex), InputRate::Vertex);
-    mLinePipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(LineVertex, position));
-    mLinePipeline.AddAttribute(0, 1, ImageFormat::RGB32, offsetof(LineVertex, color));
-    mLinePipeline.AddColorBlendAttachment(false);
-    mLinePipeline.SetPrimitive(PrimitiveType::Line);
-    mLinePipeline.AddDescriptors(Renderer::GetBufferDescriptor());
-    mLinePipeline.SetMultisampleCount(Renderer::GetSampleCount());
-    mLinePipeline.CreatePipeline(Renderer::GetRenderPass(), 0);
+    mLineShader.AddLayout(LineVertex::GetLayout(0, 0));
+    mLineShader.AddColorBlendAttachment(false);
+    mLineShader.AddDescriptor(Renderer::GetBufferDescriptor());
+    mLineShader.GetSettings().primitive = PrimitiveType::Line;
+    mLineShader.GetSettings().sampleCount = Renderer::GetSampleCount();
+    mLineShader.Load("Shaders/debugLine.vert.spv", "Shaders/debugLine.frag.spv", Renderer::GetRenderPass(), 0);
 }
 
 void DebugRenderer::Terminate()
@@ -184,7 +177,7 @@ void DebugRenderer::Flush()
         renderCommand.vertexBuffer = &mLineMesh.GetVertexBuffer();
         renderCommand.indexBuffer = &mLineMesh.GetIndexBuffer();
         renderCommand.indexCount = mLineIndices.size();
-        renderCommand.pipeline = &mLinePipeline;
+        renderCommand.pipeline = &mLineShader.GetGraphicsPipeline();
         renderCommand.descriptors[0] = &Renderer::GetBufferDescriptor();
         renderCommand.descriptorCount = 1;
 
@@ -195,4 +188,9 @@ void DebugRenderer::Flush()
         mLineVertices.clear();
         mLineIndices.clear();
     }
+}
+
+bool DebugRenderer::IsEnabled() const
+{
+    return mEnabled;
 }

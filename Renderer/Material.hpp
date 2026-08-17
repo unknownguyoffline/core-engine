@@ -41,4 +41,6 @@ struct Material
     bool enableBlending = true;
 
     std::string name = "Untitled";
+
+    int drawPriority = 0;
 };

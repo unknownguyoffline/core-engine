@@ -3,6 +3,7 @@
 #include "Renderer/Camera.hpp"
 #include "Renderer/ImageView.hpp"
 #include "Renderer/RendererType.hpp"
+#include "Renderer/Shader.hpp"
 #include "Renderer/UniformBuffer.hpp"
 #include "Renderer/Utility.hpp"
 #include <glm/glm.hpp>
@@ -81,8 +82,8 @@ private:
     LightType mType = LightType::PointLight;
 
     static CommandBuffer mCommandBuffer;
-    static GraphicsPipeline mPointLightPipeline;
-    static GraphicsPipeline mDirectionalShadowPipeline;
+    static Shader mPointLightPipeline;
+    static Shader mDirectionalShadowPipeline;
     static RenderPass mRenderPass;
     static Descriptor mDescriptor;
     static UniformBuffer mUniformBuffer;
@@ -95,10 +96,7 @@ private:
     std::vector<FrameBuffer> mFrameBuffers;
     std::vector<ImageView> mImageViews;
 
-    uint32_t mShadowMapResolution = 2048;
-
-    static Shader mDirectionalShader;
-    static Shader mPointShader;
+    uint32_t mShadowMapResolution = 1024;
 
 private:
     void GeneratePointLightShadowMap(const std::vector<RenderCommand> &renderCommand);

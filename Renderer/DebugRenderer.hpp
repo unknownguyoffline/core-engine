@@ -5,6 +5,24 @@
 #include <glm/glm.hpp>
 #include <string_view>
 
+struct LineVertex
+{
+    glm::vec3 position;
+    glm::vec3 color;
+
+    static VertexLayout GetLayout(uint32_t binding, uint32_t startLocation)
+    {
+        VertexLayout layout;
+
+        layout.attributes.emplace_back(binding, startLocation + 0, offsetof(LineVertex, position), ImageFormat::RGB32);
+        layout.attributes.emplace_back(binding, startLocation + 1, offsetof(LineVertex, color), ImageFormat::RGB32);
+
+        layout.bindings.emplace_back(binding, sizeof(LineVertex), InputRate::Vertex);
+
+        return layout;
+    }
+};
+
 class DebugRenderer
 {
 public:
@@ -25,19 +43,14 @@ public:
 
     void Flush();
 
-private:
-    struct LineVertex
-    {
-        glm::vec3 position;
-        glm::vec3 color;
-    };
+    bool IsEnabled() const;
 
+private:
     Shader mLineShader;
 
     std::vector<LineVertex> mLineVertices;
     std::vector<uint32_t> mLineIndices;
 
-    GraphicsPipeline mLinePipeline;
     bool mEnabled = false;
 
     std::string mDebugLineId;

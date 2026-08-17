@@ -106,10 +106,12 @@ public:
     static void ResizeSurface(Surface &surface, ImageFormat format);
     static void Present(Surface &surface);
 
+    static void SetupSceneShader(Shader &shader);
+
     static const std::vector<RenderCommand> &GetRenderCommands();
 
     static void Submit(RenderCommand renderCommand);
-    static void Submit(const Mesh &mesh, const Material &material, const Transform &transform, const TextureManager &textureManager);
+    static void Submit(const Mesh &mesh, const Material &material, const Transform &transform, const TextureManager &textureManager, const ShaderManager &shaderManager);
 
     static void SetBasicShader(std::string_view identifier, std::string_view vertexShader, std::string_view fragmentShader);
 
@@ -195,7 +197,7 @@ private:
     static Semaphore mImageAcquiredSemaphore;
     static Semaphore mSwapchainRenderFinished;
 
-    static GraphicsPipeline mPresentPipeline;
+    static Shader mPresentShader;
     static RenderPass mPresentRenderPass;
     static CommandBuffer mPresentCommandBuffer;
     static Descriptor mPresentInputDescriptor;

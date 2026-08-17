@@ -15,6 +15,19 @@ Mesh::Mesh(void *vertices, size_t vertexSize, uint32_t *indices, size_t indexSiz
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices)
 {
+    for (const Vertex &vertex : vertices)
+    {
+        mMinVertex.x = glm::min(vertex.position.x, mMinVertex.x);
+        mMinVertex.y = glm::min(vertex.position.y, mMinVertex.y);
+        mMinVertex.z = glm::min(vertex.position.z, mMinVertex.z);
+
+        mMaxVertex.x = glm::max(vertex.position.x, mMaxVertex.x);
+        mMaxVertex.y = glm::max(vertex.position.y, mMaxVertex.y);
+        mMaxVertex.z = glm::max(vertex.position.z, mMaxVertex.z);
+    }
+
+    mCenter = glm::mix(mMinVertex, mMaxVertex, 0.5);
+
     SetData(vertices, indices);
 }
 
@@ -50,6 +63,7 @@ void Mesh::SetData(const void *vertices, size_t vertexSize, const uint32_t *indi
 
 void Mesh::SetData(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices)
 {
+    mStandardMesh = true;
     SetData(vertices.data(), sizeof(Vertex) * vertices.size(), indices.data(), sizeof(uint32_t) * indices.size());
 }
 
