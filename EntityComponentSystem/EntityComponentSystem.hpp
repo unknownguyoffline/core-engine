@@ -60,13 +60,14 @@ private:
     friend class Scene;
     EntityID mId = (EntityID)UINT64_MAX;
     Scene *mScene = nullptr;
-    const Scene *mConstScene;
+    const Scene *mConstScene = nullptr;
 };
 
 class Scene
 {
 public:
     Entity CreateEntity(std::string_view name);
+    void DestroyEntity(Entity &entity);
     Entity GetEntityById(EntityID id);
     Entity GetEntityByName(std::string_view name);
 
@@ -161,5 +162,7 @@ ComponentType &Entity::AddComponent(Args... args)
 template <typename ComponentType>
 inline bool Entity::HasComponent() const
 {
+    if (mConstScene == nullptr)
+        return false;
     return mConstScene->HasComponent<ComponentType>(*this);
 }

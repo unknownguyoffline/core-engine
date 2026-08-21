@@ -8,6 +8,8 @@
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
+#include "json.hpp"
+#include <fstream>
 
 std::string GetMeshFromAssimpMesh(const aiMesh *aimesh, const std::string &path, std::unordered_map<const aiMesh *, std::string> &meshMap, uint32_t meshIndex, Scene &scene)
 {
@@ -191,7 +193,7 @@ void ProcessNode(Scene &scene, const aiScene *aiscene, aiNode *node, const std::
     }
 }
 
-void ModelImporter::Import(std::string_view filename, Scene &scene)
+void AssimpImporter::Import(std::string_view filename, Scene &scene)
 {
     std::unordered_map<const aiMesh *, std::string> meshMap;
     std::unordered_map<const aiMaterial *, std::string> materialMap;

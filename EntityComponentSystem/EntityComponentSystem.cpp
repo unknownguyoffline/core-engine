@@ -1,10 +1,24 @@
 #include "EntityComponentSystem.hpp"
+#include "Core/Macro.hpp"
 
 Entity Scene::CreateEntity(std::string_view name)
 {
     Entity entity = {mRegistry.create(), this};
     entity.AddComponent<EntityMetadata>().name = name;
     return entity;
+}
+
+void Scene::DestroyEntity(Entity &entity)
+{
+    if (&entity.GetParentScene() != this)
+    {
+        ERROR("Cannot delete entity. Entity not part of this scene");
+        return;
+    }
+
+    mRegistry.destroy(entity.mId);
+
+    entity = Entity();
 }
 
 Entity Scene::GetEntityById(EntityID id)
