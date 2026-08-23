@@ -111,7 +111,7 @@ void Renderer::EndFrame(const glm::vec4 &clearColor)
 
     RenderCommand mPreviousCommand;
 
-    for (const auto &[index, renderCommand] : mRenderCommands | std::views::enumerate)
+    for (const RenderCommand &renderCommand : mRenderCommands)
     {
         CmdDrawRenderCommand(renderCommand, mPreviousCommand);
         mPreviousCommand = renderCommand;

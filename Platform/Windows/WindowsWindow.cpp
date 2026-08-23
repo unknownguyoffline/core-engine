@@ -1,75 +1,86 @@
 #include "Input/Keyboard.hpp"
 #include "Input/Mouse.hpp"
 #define GLFW_INCLUDE_VULKAN
+#include "Renderer/GraphicsContext.hpp"
 #include <Core/Macro.hpp>
 #include <Core/Window.hpp>
 #include <GLFW/glfw3.h>
 #include <cassert>
+#include <math.h>
+#include <utility>
 
+namespace GlfwCallback
+{
 void windowCloseCallback(GLFWwindow *window)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowClose, nullptr);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowClose, nullptr);
 }
 
 void windowResizeCallback(GLFWwindow *window, int width, int height)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
     glm::uvec2 size = {width, height};
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowResize, &size);
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowResize, &size);
 }
 
 void windowMoveCallback(GLFWwindow *window, int x, int y)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
     glm::vec2 position = {x, y};
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMove, &position);
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMove, &position);
 }
 
 void mouseMoveCallback(GLFWwindow *window, double x, double y)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
     glm::vec2 position = {x, y};
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMouseMove, &position);
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMouseMove, &position);
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
-    MouseButton mouseButton;
+    MouseButton mouseButton = MouseButton::None;
 
     if (button == GLFW_MOUSE_BUTTON_LEFT)
+    {
         mouseButton = MouseButton::Left;
+    }
     else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
         mouseButton = MouseButton::Right;
+    }
     else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
+    {
         mouseButton = MouseButton::Middle;
+    }
 
     if (action == GLFW_PRESS)
     {
-        w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMousePress, &mouseButton);
+        windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMousePress, &mouseButton);
     }
     else if (action == GLFW_RELEASE)
     {
-        w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMouseRelease, &mouseButton);
+        windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMouseRelease, &mouseButton);
     }
 }
 
 void mouseScrollCallback(GLFWwindow *window, double x, double y)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
     glm::vec2 scroll = {x, y};
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowScroll, &scroll);
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowScroll, &scroll);
 }
 
 Key GetKeyFromGlfwKey(int key)
 {
-    Key result;
+    Key result = Key::None;
 
     switch (key)
     {
@@ -442,107 +453,136 @@ Key GetKeyFromGlfwKey(int key)
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
     Key result = GetKeyFromGlfwKey(key);
 
     if (action == GLFW_PRESS)
     {
-        w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowKeyPress, &result);
+        windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowKeyPress, &result);
     }
     else if (action == GLFW_REPEAT)
     {
-        w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowKeyRepeat, &result);
+        windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowKeyRepeat, &result);
     }
     else if (action == GLFW_RELEASE)
     {
-        w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowKeyRelease, &result);
+        windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowKeyRelease, &result);
     }
 }
 
 void characterCallback(GLFWwindow *window, unsigned int codepoint)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
-    char ch = codepoint;
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowCharacterType, &ch);
+    char ch = (char)codepoint;
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowCharacterType, &ch);
 }
 
 void minimizeCallback(GLFWwindow *window, int minimize)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
-    bool isMinimized = minimize;
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMinimize, &isMinimized);
+    bool isMinimized = (bool)minimize;
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMinimize, &isMinimized);
 }
 
 void maximizeCallback(GLFWwindow *window, int maximize)
 {
-    WindowData *w = (WindowData *)glfwGetWindowUserPointer(window);
+    WindowData *windowData = (WindowData *)glfwGetWindowUserPointer(window);
 
-    bool isMaximized = maximize;
-    w->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMaximize, &isMaximized);
+    bool isMaximized = (bool)maximize;
+    windowData->dispatcher.Dispatch((uint32_t)WindowEvent::WindowMaximize, &isMaximized);
 }
 
-void Window::CreateWindow(const glm::uvec2 &size, std::string_view title)
+} // namespace GlfwCallback
+
+Window::Window(const glm::uvec2 &size, std::string_view title)
 {
     CHROME_TRACE_FUNCTION();
 
-
     glfwInit();
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    mWindowData.window = glfwCreateWindow(size.x, size.y, title.data(), nullptr, nullptr);
+    mWindowData.window = glfwCreateWindow((int)size.x, (int)size.y, title.data(), nullptr, nullptr);
 
     if (mWindowData.window == nullptr)
     {
-        const char *description;
+        const char *description = nullptr;
         glfwGetError(&description);
         ERROR("Failed to create window: {}", description);
         return;
     }
 
     glfwSetWindowUserPointer(mWindowData.window, &mWindowData);
-    glfwSetWindowCloseCallback(mWindowData.window, windowCloseCallback);
-    glfwSetWindowSizeCallback(mWindowData.window, windowResizeCallback);
-    glfwSetWindowPosCallback(mWindowData.window, windowMoveCallback);
-    glfwSetCursorPosCallback(mWindowData.window, mouseMoveCallback);
-    glfwSetMouseButtonCallback(mWindowData.window, mouseButtonCallback);
-    glfwSetScrollCallback(mWindowData.window, mouseScrollCallback);
-    glfwSetKeyCallback(mWindowData.window, keyCallback);
-    glfwSetCharCallback(mWindowData.window, characterCallback);
-    glfwSetWindowIconifyCallback(mWindowData.window, minimizeCallback);
-    glfwSetWindowMaximizeCallback(mWindowData.window, maximizeCallback);
+    glfwSetWindowCloseCallback(mWindowData.window, GlfwCallback::windowCloseCallback);
+    glfwSetWindowSizeCallback(mWindowData.window, GlfwCallback::windowResizeCallback);
+    glfwSetWindowPosCallback(mWindowData.window, GlfwCallback::windowMoveCallback);
+    glfwSetCursorPosCallback(mWindowData.window, GlfwCallback::mouseMoveCallback);
+    glfwSetMouseButtonCallback(mWindowData.window, GlfwCallback::mouseButtonCallback);
+    glfwSetScrollCallback(mWindowData.window, GlfwCallback::mouseScrollCallback);
+    glfwSetKeyCallback(mWindowData.window, GlfwCallback::keyCallback);
+    glfwSetCharCallback(mWindowData.window, GlfwCallback::characterCallback);
+    glfwSetWindowIconifyCallback(mWindowData.window, GlfwCallback::minimizeCallback);
+    glfwSetWindowMaximizeCallback(mWindowData.window, GlfwCallback::maximizeCallback);
 }
 
 void Window::HideCursor()
 {
     CHROME_TRACE_FUNCTION();
-    if (glfwGetInputMode(mWindowData.window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
-        glfwSetInputMode(mWindowData.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwGetInputMode(mWindowData.window, GLFW_CURSOR) != GLFW_CURSOR_HIDDEN)
+    {
+        glfwSetInputMode(mWindowData.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
 }
 
+Window::Window(Window &&window) noexcept
+{
+    mWindowData.window = window.mWindowData.window;
+    mWindowData.dispatcher = std::move(window.mWindowData.dispatcher);
+    mWindowData.isMaximized = window.mWindowData.isMaximized;
+    mWindowData.restoreData = window.mWindowData.restoreData;
+
+    window.mWindowData = {};
+    glfwSetWindowUserPointer(mWindowData.window, &mWindowData);
+}
+Window &Window::operator=(Window &&window) noexcept
+{
+    DestroyWindow();
+
+    mWindowData.window = window.mWindowData.window;
+    mWindowData.dispatcher = std::move(window.mWindowData.dispatcher);
+    mWindowData.isMaximized = window.mWindowData.isMaximized;
+    mWindowData.restoreData = window.mWindowData.restoreData;
+
+    window.mWindowData = {};
+    glfwSetWindowUserPointer(mWindowData.window, &mWindowData);
+    return *this;
+}
+Window::~Window()
+{
+    DestroyWindow();
+}
 void Window::DestroyWindow()
 {
     CHROME_TRACE_FUNCTION();
-    assert(mWindowData.window != nullptr);
     glfwDestroyWindow(mWindowData.window);
+    mWindowData.window = nullptr;
 }
 
 glm::uvec2 Window::GetSize() const
 {
     CHROME_TRACE_FUNCTION();
-    int width, height;
+    int width = 0, height = 0;
     glfwGetWindowSize(mWindowData.window, &width, &height);
 
-    return glm::uvec2(width, height);
+    return {width, height};
 }
 
 glm::uvec2 Window::GetFrameBufferSize() const
 {
     CHROME_TRACE_FUNCTION();
-    int width, height;
+    int width = 0, height = 0;
     glfwGetFramebufferSize(mWindowData.window, &width, &height);
 
     return glm::uvec2(width, height);
@@ -551,7 +591,7 @@ glm::uvec2 Window::GetFrameBufferSize() const
 glm::uvec2 Window::GetPosition() const
 {
     CHROME_TRACE_FUNCTION();
-    int x, y;
+    int x = 0, y = 0;
     glfwGetWindowPos(mWindowData.window, &x, &y);
 
     return glm::uvec2(x, y);
@@ -566,13 +606,13 @@ std::string Window::GetTitle() const
 void Window::SetSize(const glm::uvec2 &size)
 {
     CHROME_TRACE_FUNCTION();
-    glfwSetWindowSize(mWindowData.window, size.x, size.y);
+    glfwSetWindowSize(mWindowData.window, (int)size.x, (int)size.y);
 }
 
 void Window::SetPosition(const glm::uvec2 &position)
 {
     CHROME_TRACE_FUNCTION();
-    glfwSetWindowPos(mWindowData.window, position.x, position.y);
+    glfwSetWindowPos(mWindowData.window, (int)position.x, (int)position.y);
 }
 
 void Window::SetTitle(const std::string &title)
@@ -581,7 +621,7 @@ void Window::SetTitle(const std::string &title)
     glfwSetWindowTitle(mWindowData.window, title.c_str());
 }
 
-void Window::AddListener(std::function<bool(uint32_t code, void *data)> listener)
+void Window::AddListener(const std::function<bool(uint32_t code, void *data)> &listener)
 {
     CHROME_TRACE_FUNCTION();
     mWindowData.dispatcher.AddListener(listener);
@@ -599,21 +639,39 @@ GLFWwindow *Window::GetNativeWindow() const
     return mWindowData.window;
 }
 
+void Window::DisableCursor()
+{
+    CHROME_TRACE_FUNCTION();
+    if (glfwGetInputMode(mWindowData.window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+    {
+        glfwSetInputMode(mWindowData.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+}
+
 void Window::ShowCursor()
 {
     CHROME_TRACE_FUNCTION();
     if (glfwGetInputMode(mWindowData.window, GLFW_CURSOR) != GLFW_CURSOR_NORMAL)
+    {
         glfwSetInputMode(mWindowData.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 }
-bool Window::isCursorHidden()
+bool Window::isCursorHidden() const
 {
     CHROME_TRACE_FUNCTION();
     return glfwGetInputMode(mWindowData.window, GLFW_CURSOR) != GLFW_CURSOR_NORMAL;
 }
-bool Window::isFullscreen()
+bool Window::IsFullscreen() const
 {
     CHROME_TRACE_FUNCTION();
     return glfwGetWindowMonitor(mWindowData.window) == glfwGetPrimaryMonitor();
+}
+
+glm::vec2 Window::GetCursorPosition() const
+{
+    double x = 0, y = 0;
+    glfwGetCursorPos(mWindowData.window, &x, &y);
+    return {x, y};
 }
 
 void Window::Maximize()
@@ -626,7 +684,7 @@ void Window::Restore()
     glfwRestoreWindow(mWindowData.window);
 }
 
-bool Window::IsMaximized()
+bool Window::IsMaximized() const
 {
     return mWindowData.isMaximized;
 }
@@ -638,18 +696,20 @@ void Window::SetFullscreen(bool fullscreen)
 
     if (fullscreen)
     {
-        glfwGetWindowSize(mWindowData.window, &mWindowData.preFullscreenData.width, &mWindowData.preFullscreenData.height);
-        glfwGetWindowPos(mWindowData.window, &mWindowData.preFullscreenData.x, &mWindowData.preFullscreenData.y);
+        glfwGetWindowSize(mWindowData.window, &mWindowData.restoreData.width, &mWindowData.restoreData.height);
+        glfwGetWindowPos(mWindowData.window, &mWindowData.restoreData.x, &mWindowData.restoreData.y);
 
         glfwSetWindowMonitor(mWindowData.window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, 0);
     }
     else
     {
-        glfwSetWindowMonitor(mWindowData.window, nullptr, mWindowData.preFullscreenData.x, mWindowData.preFullscreenData.y, mWindowData.preFullscreenData.width, mWindowData.preFullscreenData.height, 0);
+        glfwSetWindowMonitor(mWindowData.window, nullptr, mWindowData.restoreData.x, mWindowData.restoreData.y, mWindowData.restoreData.width, mWindowData.restoreData.height, 0);
     }
 }
 
-Window::~Window()
+VkSurfaceKHR Window::CreateWindowSurface() const
 {
-    DestroyWindow();
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    glfwCreateWindowSurface(GraphicsContext::GetCurrentContext().GetInstance(), mWindowData.window, nullptr, &surface);
+    return surface;
 }

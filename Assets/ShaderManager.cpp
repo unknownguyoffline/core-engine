@@ -23,7 +23,7 @@ std::string ShaderManager::Create(std::string_view identifier, const std::vector
 }
 std::string ShaderManager::Create(std::string_view identifier, const std::vector<uint32_t> &vertexCode, const std::vector<uint32_t> &fragmentCode, std::function<void(Shader &shader)> setupCallback)
 {
-    Create(identifier, vertexCode, fragmentCode, {}, {}, setupCallback);
+    return Create(identifier, vertexCode, fragmentCode, {}, {}, setupCallback);
 }
 
 Shader &ShaderManager::Get(std::string_view identifier)
