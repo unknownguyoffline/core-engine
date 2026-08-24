@@ -120,6 +120,7 @@ void Shader::SetupPipelineSettings(const ShaderSettings &settings)
     mGraphicsPipeline.EnableDepthTesting(settings.enableDepthTest);
     mGraphicsPipeline.EnableDepthWrite(settings.enableDepthWrite);
     mGraphicsPipeline.SetPrimitive(settings.primitive);
+    mGraphicsPipeline.SetCompareOp(settings.compare);
 }
 
 void Shader::AddColorBlendAttachment()

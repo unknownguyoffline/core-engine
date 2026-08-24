@@ -338,3 +338,16 @@ enum class ComponentSwizzle
     B,
     A,
 };
+
+enum class CompareType
+{
+    None,
+    Never,
+    Less,
+    Equal,
+    LessOrEqual,
+    Greater,
+    NotEqual,
+    GreaterOrEqual,
+    Always,
+};

@@ -10,7 +10,7 @@ void DebugRenderer::Initialize()
     mLineShader.AddDescriptor(Renderer::GetBufferDescriptor());
     mLineShader.GetSettings().primitive = PrimitiveType::Line;
     mLineShader.GetSettings().sampleCount = Renderer::GetSampleCount();
-    mLineShader.Load("Shaders/debugLine.vert.spv", "Shaders/debugLine.frag.spv", Renderer::GetRenderPass(), 0);
+    mLineShader.Load("Shaders/debugLine.vert.spv", "Shaders/debugLine.frag.spv", Renderer::GetRenderPass(), Renderer::GetRenderPassColorSubpassIndex());
 }
 
 void DebugRenderer::Terminate()

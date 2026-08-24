@@ -5,11 +5,11 @@
 #include "Renderer/GraphicsContext.hpp"
 #include <cstring>
 
+#define USE_DEPTH_PREPASS 0
+
 void Renderer::Initialize(const RendererSpecification &specification)
 {
     mSpecification = specification;
-
-    // TextureManager::Initialize();
 
     mTextureDescriptor.AddBindlessDescriptor(DescriptorType::CombinedSampler, ShaderStage::Fragment, 1024);
     mTextureDescriptor.CreateDescriptor();
@@ -61,6 +61,16 @@ void Renderer::Initialize(const RendererSpecification &specification)
     mBufferDescriptor.UpdateBuffer(mLightStorageBuffer.GetBuffer(), 1);
 
     mViewportSize = mResolution;
+
+#if USE_DEPTH_PREPASS
+    mDepthPrepassShader.AddDescriptor(mBufferDescriptor);
+    mDepthPrepassShader.AddLayout(Vertex::GetVertexLayout(0, 0));
+    mDepthPrepassShader.SetPushConstantSize(sizeof(PushConstantData));
+    mDepthPrepassShader.GetSettings().sampleCount = Renderer::GetSampleCount();
+    mDepthPrepassShader.GetSettings().cullMode = CullMode::Back;
+    mDepthPrepassShader.Load("Shaders/prepass.vert.spv", "Shaders/prepass.frag.spv", Renderer::GetRenderPass(), 0);
+
+#endif
 }
 
 void Renderer::Terminate()
@@ -108,6 +118,58 @@ void Renderer::EndFrame(const glm::vec4 &clearColor)
 
     VkClearValue vkClearColor = {clearColor.r, clearColor.g, clearColor.b, clearColor.a};
     mSceneRenderPass.CmdBeginRenderPass(mCommandBuffer, mSceneFrameBuffer, mResolution, {vkClearColor, vkClearColor, {1, 1, 1, 1}, {1, 1, 1, 1}});
+
+#if USE_DEPTH_PREPASS
+    for (const RenderCommand &renderCommand : mRenderCommands)
+    {
+        mDepthPrepassShader.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
+
+        uint32_t vertexBufferCount = 1;
+        VkBuffer vertexBuffer[2] = {renderCommand.vertexBuffer->handle};
+        if (renderCommand.instanceBuffer != nullptr)
+        {
+            vertexBuffer[1] = renderCommand.instanceBuffer->GetBuffer().handle;
+            vertexBufferCount = 2;
+        }
+
+        VkDeviceSize offsets[] = {0, 0};
+
+        vkCmdBindVertexBuffers(mCommandBuffer.GetHandle(), 0, vertexBufferCount, vertexBuffer, offsets);
+
+        vkCmdBindIndexBuffer(mCommandBuffer.GetHandle(), renderCommand.indexBuffer->handle, 0, VK_INDEX_TYPE_UINT32);
+
+        VkViewport viewport =
+            {
+                .width = (float)mViewportSize.x,
+                .height = (float)mViewportSize.y,
+                .minDepth = 0.f,
+                .maxDepth = 1.f,
+            };
+
+        VkRect2D scissor =
+            {
+                .extent = {(uint32_t)viewport.width, (uint32_t)viewport.height},
+            };
+
+        vkCmdSetViewport(mCommandBuffer.GetHandle(), 0, 1, &viewport);
+        vkCmdSetScissor(mCommandBuffer.GetHandle(), 0, 1, &scissor);
+        vkCmdSetCullMode(mCommandBuffer.GetHandle(), GetVulkanCullMode(renderCommand.pipelineSettings.cullMode));
+        vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), (VkBool32)renderCommand.pipelineSettings.enableDepthTest);
+        vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), (VkBool32)renderCommand.pipelineSettings.enableDepthWrite);
+
+        if (renderCommand.pushContantSize != 0)
+        {
+            vkCmdPushConstants(mCommandBuffer.GetHandle(), renderCommand.pipeline->GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
+        }
+
+        VkDescriptorSet descriptorSets[1] = {mBufferDescriptor.GetDescriptorSet()};
+        vkCmdBindDescriptorSets(mCommandBuffer.GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mDepthPrepassShader.GetGraphicsPipeline().GetPipelineLayout(), 0, 1, descriptorSets, 0, nullptr);
+
+        vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, renderCommand.instanceCount, 0, 0, 0);
+    }
+
+    vkCmdNextSubpass(mCommandBuffer.GetHandle(), VK_SUBPASS_CONTENTS_INLINE);
+#endif
 
     RenderCommand mPreviousCommand;
 
@@ -231,7 +293,7 @@ void Renderer::Present(Surface &surface)
 
     vkQueuePresentKHR(GraphicsContext::GetCurrentContext().GetQueues().graphics, &presentInfo);
 
-    vkDeviceWaitIdle(GraphicsContext::GetCurrentContext().GetDevice());
+    // vkDeviceWaitIdle(GraphicsContext::GetCurrentContext().GetDevice());
 }
 
 void Renderer::SetupSceneShader(Shader &shader)
@@ -242,8 +304,12 @@ void Renderer::SetupSceneShader(Shader &shader)
     shader.SetPushConstantSize(sizeof(PushConstantData));
     shader.GetSettings().cullMode = CullMode::Back;
     shader.GetSettings().enableDepthTest = true;
-    shader.GetSettings().enableDepthWrite = true;
+    shader.GetSettings().enableDepthWrite = false;
     shader.GetSettings().sampleCount = Renderer::GetSampleCount();
+
+#if USE_DEPTH_PREPASS
+    shader.GetSettings().compare = CompareType::Equal;
+#endif
 }
 
 const std::vector<RenderCommand> &Renderer::GetRenderCommands()
@@ -348,33 +414,6 @@ void Renderer::SetViewMatrix(const glm::mat4 &matrix)
 void Renderer::CreateGraphicsPipeline(std::string_view identifier, ShaderManager &shaderManager)
 {
     const Shader &shader = shaderManager.Get(identifier);
-
-    // GraphicsPipeline pipeline;
-    // pipeline.SetVertexShader(shader.vertex);
-    // pipeline.SetFragmentShader(shader.fragment);
-    // if (shader.vertex != VK_NULL_HANDLE)
-    // {
-    //     pipeline.SetGeometryShader(shader.geometry);
-    // }
-
-    // pipeline.AddDescriptors(mTextureDescriptor);
-    // pipeline.AddDescriptors(mBufferDescriptor);
-    // pipeline.AddDescriptors(mShadowMapDescriptor);
-    // pipeline.SetCullMode(CullMode::Back);
-    // pipeline.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
-    // pipeline.AddAttribute(0, 0, ImageFormat::RGB32, offsetof(Vertex, position));
-    // pipeline.AddAttribute(0, 1, ImageFormat::RG32, offsetof(Vertex, uv));
-    // pipeline.AddAttribute(0, 2, ImageFormat::RGB32, offsetof(Vertex, normal));
-    // pipeline.AddAttribute(0, 3, ImageFormat::RGB32, offsetof(Vertex, tangent));
-    // pipeline.AddAttribute(0, 4, ImageFormat::RGB32, offsetof(Vertex, bitangent));
-    // pipeline.EnableDepthWrite(true);
-    // pipeline.EnableDepthTesting(true);
-    // pipeline.SetSampleCount(mSampleCount);
-    // pipeline.SetPushConstant(ShaderStage::All, sizeof(PushConstantData));
-    // pipeline.AddColorBlendAttachment(true);
-    // pipeline.CreatePipeline(mSceneRenderPass, 0);
-
-    // mShaderPipelineMap[identifier.data()] = pipeline;
 }
 RenderPass &Renderer::GetRenderPass()
 {
@@ -394,12 +433,42 @@ void Renderer::SetViewportSize(const glm::uvec2 &size)
     mViewportSize = size;
 }
 
+uint32_t Renderer::GetRenderPassColorSubpassIndex()
+{
+
+    uint32_t index = 0;
+
+#if USE_DEPTH_PREPASS
+    index = 1;
+#endif
+
+    return index;
+}
+
 void Renderer::CreateSceneRenderPassMultisampled()
 {
     uint32_t colorResolve = mSceneRenderPass.AddAttachment(mSpecification.presentationFormat, ImageLayout::None, ImageLayout::ShaderRead, LoadOperation::Clear, StoreOperation::Store);
     uint32_t colorAttachment = mSceneRenderPass.AddAttachment(mSpecification.presentationFormat, ImageLayout::None, ImageLayout::ColorAttachment, LoadOperation::Clear, StoreOperation::DontCare, LoadOperation::DontCare, StoreOperation::DontCare, mSampleCount);
     uint32_t depthResolve = mSceneRenderPass.AddAttachment(ImageFormat::D32, ImageLayout::None, ImageLayout::ShaderRead, LoadOperation::Clear, StoreOperation::Store);
     uint32_t depthAttachment = mSceneRenderPass.AddAttachment(ImageFormat::D32, ImageLayout::None, ImageLayout::DepthStencil, LoadOperation::Clear, StoreOperation::DontCare, LoadOperation::DontCare, StoreOperation::DontCare, mSampleCount);
+
+#if USE_DEPTH_PREPASS
+
+    Subpass depthPass;
+    depthPass.SetDepthAttachment(depthAttachment);
+    depthPass.SetDepthResolveAttachment(depthResolve);
+
+    Subpass subpass;
+    subpass.AddColorAttachment(colorAttachment);
+    subpass.AddResolveAttachment(colorResolve);
+    subpass.SetDepthAttachment(depthAttachment);
+
+    mSceneRenderPass.AddSubpass(depthPass, PipelineBindPoint::Graphic);
+    mSceneRenderPass.AddSubpass(subpass, PipelineBindPoint::Graphic);
+
+    mSceneRenderPass.AddDependency(RenderPass::ExternalSubpass, 0, PipelineStage::ColorAttachmentOutput, PipelineStage::ColorAttachmentOutput);
+    mSceneRenderPass.AddDependency(0, 1, PipelineStage::EarlyFragmentTests, PipelineStage::LateFragmentTests);
+#else
 
     Subpass subpass;
     subpass.AddColorAttachment(colorAttachment);
@@ -410,6 +479,7 @@ void Renderer::CreateSceneRenderPassMultisampled()
     mSceneRenderPass.AddSubpass(subpass, PipelineBindPoint::Graphic);
 
     mSceneRenderPass.AddDependency(RenderPass::ExternalSubpass, 0, PipelineStage::ColorAttachmentOutput, PipelineStage::ColorAttachmentOutput);
+#endif
 
     mSceneRenderPass.CreateRenderPass();
 }
@@ -459,7 +529,7 @@ void Renderer::CreatePresentPipeline()
     mPresentShader.AddDescriptor(mPresentInputDescriptor);
     mPresentShader.AddColorBlendAttachment(false);
     mPresentShader.GetSettings().cullMode = CullMode::None;
-    mPresentShader.Load("Shaders/fullscreen.vert.spv", "Shaders/fullscreen.frag.spv", mSceneRenderPass, 0);
+    mPresentShader.Load("Shaders/fullscreen.vert.spv", "Shaders/fullscreen.frag.spv", mPresentRenderPass, 0);
 }
 
 void Renderer::CreatePresentRenderPass()
@@ -574,3 +644,4 @@ std::string Renderer::mBasicShaderID;
 std::unordered_map<std::string, GraphicsPipeline> Renderer::mShaderPipelineMap;
 uint32_t Renderer::mInputInt;
 glm::uvec2 Renderer::mViewportSize;
+Shader Renderer::mDepthPrepassShader;

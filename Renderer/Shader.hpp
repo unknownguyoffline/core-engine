@@ -12,6 +12,7 @@ struct ShaderSettings
     bool enableDepthWrite = false;
     bool enableDepthTest = false;
     PrimitiveType primitive = PrimitiveType::Triangle;
+    CompareType compare = CompareType::Less;
 };
 
 class Shader

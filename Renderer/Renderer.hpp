@@ -174,6 +174,8 @@ public:
         return mTextureDescriptor;
     }
 
+    static uint32_t GetRenderPassColorSubpassIndex();
+
 private:
     static uint32_t mInputInt;
 
@@ -219,6 +221,8 @@ private:
     static std::string mBasicShaderID;
 
     static glm::uvec2 mViewportSize;
+
+    static Shader mDepthPrepassShader;
 
 private:
     static void CreateSceneRenderPassMultisampled();
