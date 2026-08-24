@@ -78,7 +78,6 @@ public:
     }
 
 private:
-    static GraphicsPipeline mTextPipeline;
     static UniformBuffer mUniformBuffer;
     static Descriptor mUniformDescriptor;
     static Descriptor mBezierDescriptor;

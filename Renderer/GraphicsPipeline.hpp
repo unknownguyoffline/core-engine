@@ -54,6 +54,8 @@ public:
 
     void ClearAttributesAndBinding();
 
+    void SetCompareOp(CompareType compare);
+
 private:
     VkShaderModule mVertexShader = VK_NULL_HANDLE;
     VkShaderModule mFragmentShader = VK_NULL_HANDLE;
@@ -81,4 +83,6 @@ private:
     bool mDepthWriteEnable = false;
     bool mBlendEnable = false;
     bool mWireframeEnable = false;
+
+    VkCompareOp mDepthCompareOp = VK_COMPARE_OP_LESS;
 };

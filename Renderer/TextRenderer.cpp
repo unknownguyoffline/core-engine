@@ -81,19 +81,7 @@ void TextRenderer::Initialize()
     mShader.GetSettings().enableDepthTest = true;
     mShader.GetSettings().enableDepthWrite = true;
     mShader.GetSettings().sampleCount = Renderer::GetSampleCount();
-    mShader.Load("Shaders/bezier.vert.spv", "Shaders/bezier.frag.spv", Renderer::GetRenderPass(), 0);
-
-    mTextPipeline.AddColorBlendAttachment(true);
-
-    mTextPipeline.SetPushConstant(ShaderStage::All, sizeof(TextPushConstant));
-
-    mTextPipeline.EnableDepthTesting(false);
-    mTextPipeline.EnableDepthWrite(false);
-    mTextPipeline.SetCullMode(CullMode::None);
-
-    mTextPipeline.SetSampleCount(Renderer::GetSampleCount());
-
-    mTextPipeline.CreatePipeline(Renderer::GetRenderPass(), 1);
+    mShader.Load("Shaders/bezier.vert.spv", "Shaders/bezier.frag.spv", Renderer::GetRenderPass(), Renderer::GetRenderPassColorSubpassIndex());
 }
 
 void TextRenderer::Terminate()
@@ -256,7 +244,7 @@ void TextRenderer::Flush()
     renderCommand.indexCount = mIndexBuffer.capacity / sizeof(uint32_t);
     renderCommand.instanceBuffer = &mInstanceBuffer;
     renderCommand.instanceCount = mInstanceData.size();
-    renderCommand.pipeline = &mTextPipeline;
+    renderCommand.pipeline = &mShader.GetGraphicsPipeline();
     renderCommand.pipelineSettings.cullMode = CullMode::None;
     renderCommand.pushContantSize = sizeof(TextPushConstant);
     renderCommand.pipelineSettings.enableDepthTest = false;
@@ -275,7 +263,6 @@ void TextRenderer::SetCamera(const Camera &camera)
     mUniformBuffer.SetData(&mUniformData);
 }
 
-GraphicsPipeline TextRenderer::mTextPipeline;
 UniformBuffer TextRenderer::mUniformBuffer;
 Descriptor TextRenderer::mUniformDescriptor;
 Descriptor TextRenderer::mBezierDescriptor;

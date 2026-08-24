@@ -201,7 +201,7 @@ void GraphicsPipeline::CreatePipeline(const RenderPass &renderPass, uint32_t sub
     depthStencil.maxDepthBounds = 1.f;
     depthStencil.depthWriteEnable = mDepthWriteEnable;
     depthStencil.depthTestEnable = mDepthTestEnable;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthCompareOp = mDepthCompareOp;
 
     std::vector<VkPushConstantRange> ranges;
     for (auto &[stage, range] : mPushConstants)
@@ -276,4 +276,9 @@ void GraphicsPipeline::ClearAttributesAndBinding()
 {
     mAttributeDescription.clear();
     mBindingDescription.clear();
+}
+
+void GraphicsPipeline::SetCompareOp(CompareType compare)
+{
+    mDepthCompareOp = GetVulkanCompareType(compare);
 }
