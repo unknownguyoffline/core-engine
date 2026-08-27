@@ -11,6 +11,7 @@ public:
     void SetBorderColor(const glm::vec4 &color);
     void CreateSampler();
     void DestroySampler();
+    void EnableCompare(bool enable, CompareType compareType);
 
     VkSampler GetHandle() const
     {
@@ -18,7 +19,17 @@ public:
     }
 
 private:
-    VkFilter mMinFilter = VK_FILTER_NEAREST, mMagFilter = VK_FILTER_NEAREST;
-    VkSamplerAddressMode mUAddressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT, mVAddressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT, mWAddressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     VkSampler mHandle = VK_NULL_HANDLE;
+    VkSamplerCreateInfo mCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .magFilter = VK_FILTER_NEAREST,
+            .minFilter = VK_FILTER_NEAREST,
+            .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .minLod = 1,
+            .maxLod = 1,
+            .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+    };
 };

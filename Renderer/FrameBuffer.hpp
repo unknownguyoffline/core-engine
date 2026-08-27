@@ -8,7 +8,7 @@ class RenderPass;
 class FrameBuffer
 {
 public:
-    void CreateFrameBuffer(const glm::uvec2 &size, std::initializer_list<ImageView> attachments, const RenderPass &renderPass, uint32_t layers = 1);
+    void CreateFrameBuffer(const glm::uvec2 &size, std::initializer_list<const ImageView> attachments, const RenderPass &renderPass, uint32_t layers = 1);
     void CreateFrameBuffer(std::initializer_list<ImageDeprecated> attachments, const RenderPass &renderPass, uint32_t layers = 1);
     void CreateFrameBuffer(std::initializer_list<Image> attachments, const RenderPass &renderPass, uint32_t layers = 1);
 

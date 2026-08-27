@@ -8,6 +8,8 @@
 #include "Renderer/Utility.hpp"
 #include <glm/glm.hpp>
 
+#define USE_GEOMETRY_SHADER 1
+
 enum class LightType
 {
     DirectionalLight,
@@ -25,6 +27,7 @@ struct ShadowPushConstant
 {
     glm::mat4 model;
     float intensity;
+    uint32_t projectionIndex;
 };
 
 class Light
@@ -40,7 +43,7 @@ public:
     float GetOuterCosinAngle() const;
     float GetInnerCosinAngle() const;
     float GetIntensity() const;
-    const ImageDeprecated &GetShadowMap() const;
+    const Image &GetShadowMap() const;
     LightType GetType() const;
 
     void SetPosition(const glm::vec3 &position);
@@ -78,7 +81,9 @@ private:
     bool mShadowMapCreated = false;
     bool mIsCubeMap = false;
 
-    ImageDeprecated mShadowMap;
+    Image mShadowMap;
+
+    // ImageDeprecated mShadowMap;
     LightType mType = LightType::PointLight;
 
     static CommandBuffer mCommandBuffer;

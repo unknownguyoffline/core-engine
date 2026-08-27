@@ -3,7 +3,7 @@
 #include "Renderer/Image.hpp"
 #include "Renderer/RenderPass.hpp"
 
-void FrameBuffer::CreateFrameBuffer(const glm::uvec2 &size, std::initializer_list<ImageView> attachments, const RenderPass &renderPass, uint32_t layers)
+void FrameBuffer::CreateFrameBuffer(const glm::uvec2 &size, std::initializer_list<const ImageView> attachments, const RenderPass &renderPass, uint32_t layers)
 {
     std::vector<VkImageView> attachmentViews;
     for (const ImageView &image : attachments)

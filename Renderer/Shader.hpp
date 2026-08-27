@@ -37,6 +37,8 @@ public:
 
     void SetPushConstantSize(size_t size);
 
+    void SetDepthBias(bool enable, float slopeFactor, float constantFactor);
+
     const ShaderSettings &GetSettings() const;
     ShaderSettings &GetSettings();
     const GraphicsPipeline &GetGraphicsPipeline() const;

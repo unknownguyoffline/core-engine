@@ -190,6 +190,10 @@ void GraphicsPipeline::CreatePipeline(const RenderPass &renderPass, uint32_t sub
     rasterization.frontFace = mFrontFace;
     rasterization.lineWidth = 1.f;
 
+    rasterization.depthBiasEnable = mEnableDepthBias;
+    rasterization.depthBiasSlopeFactor = mSlopeFactor;
+    rasterization.depthBiasConstantFactor = mConstantFactor;
+
     VkPipelineVertexInputStateCreateInfo vertexInput = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     vertexInput.pVertexAttributeDescriptions = mAttributeDescription.data();
     vertexInput.vertexAttributeDescriptionCount = mAttributeDescription.size();
@@ -281,4 +285,11 @@ void GraphicsPipeline::ClearAttributesAndBinding()
 void GraphicsPipeline::SetCompareOp(CompareType compare)
 {
     mDepthCompareOp = GetVulkanCompareType(compare);
+}
+
+void GraphicsPipeline::SetDepthBias(bool enable, float slopeFactor, float constantFactor)
+{
+    mEnableDepthBias = enable;
+    mSlopeFactor = slopeFactor;
+    mConstantFactor = constantFactor;
 }

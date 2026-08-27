@@ -35,6 +35,12 @@ std::string TextureManager::CreateTexture(std::string_view identifier, void *dat
     return identifier.data();
 }
 
+std::string TextureManager::AddTexture(std::string_view identifier, Texture &texture)
+{
+    mTextureMap[identifier.data()] = texture;
+    return identifier.data();
+}
+
 void TextureManager::DestroyTexture(std::string_view identifier)
 {
     mTextureMap[identifier.data()].Destroy();

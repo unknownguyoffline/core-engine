@@ -211,7 +211,7 @@ private:
 
     static Camera mCamera;
 
-    static std::vector<ImageDeprecated> mShadowMaps;
+    static std::vector<Image> mShadowMaps;
     static std::vector<LightUniformData> mLight;
     static StorageBuffer mLightStorageBuffer;
 

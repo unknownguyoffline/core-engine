@@ -21,6 +21,7 @@ public:
     void UpdateImage(const Image &image, const Sampler &sampler, uint32_t binding) const;
     void UpdateImage(const ImageView &view, ImageLayout layout, const Sampler &sampler, uint32_t binding) const;
     void UpdateImageIndex(const ImageDeprecated &image, ImageLayout layout, const Sampler &sampler, uint32_t binding, uint32_t index) const;
+    void UpdateImageIndex(const Image &image, ImageLayout layout, const Sampler &sampler, uint32_t binding, uint32_t index) const;
 
     VkDescriptorSet GetDescriptorSet() const;
     VkDescriptorSetLayout GetDescriptorSetLayout() const;

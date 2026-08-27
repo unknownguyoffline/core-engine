@@ -275,6 +275,29 @@ void Descriptor::UpdateImageIndex(const ImageDeprecated &image, ImageLayout layo
     vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
+void Descriptor::UpdateImageIndex(const Image &image, ImageLayout layout, const Sampler &sampler, uint32_t binding, uint32_t index) const
+{
+    VkDescriptorImageInfo imageInfo =
+        {
+            .sampler = sampler.GetHandle(),
+            .imageView = image.GetImageView().GetHandle(),
+            .imageLayout = GetVulkanImageLayout(layout),
+        };
+
+    VkWriteDescriptorSet writeDescriptorSet =
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = mSet,
+            .dstBinding = binding,
+            .dstArrayElement = index,
+            .descriptorCount = 1,
+            .descriptorType = mDescriptorBinding[binding].descriptorType,
+            .pImageInfo = &imageInfo,
+        };
+
+    vkUpdateDescriptorSets(GraphicsContext::GetCurrentContext().GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+}
+
 VkDescriptorSet Descriptor::GetDescriptorSet() const
 {
     return mSet;

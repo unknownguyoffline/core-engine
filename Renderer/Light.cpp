@@ -1,11 +1,12 @@
-#include "Assets/TextureManager.hpp"
-#include "Renderer/Renderer.hpp"
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include "Assets/ShaderManager.hpp"
+
 #include "Light.hpp"
+#include "Assets/ShaderManager.hpp"
+#include "Assets/TextureManager.hpp"
 #include "Renderer/Helper.hpp"
 #include "Renderer/ImageView.hpp"
 #include "Renderer/Mesh.hpp"
+#include "Renderer/Renderer.hpp"
 #include <cstring>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -30,16 +31,17 @@ void Light::Initialize()
     mPointLightPipeline.AddDescriptor(mDescriptor, Renderer::GetTextureDescriptor());
     mPointLightPipeline.AddLayout(Vertex::GetVertexLayout(0, 0));
     mPointLightPipeline.SetPushConstantSize(sizeof(PushConstantData));
-    mPointLightPipeline.GetSettings().cullMode = CullMode::None;
+    mPointLightPipeline.GetSettings().cullMode = CullMode::Back;
     mPointLightPipeline.AddColorBlendAttachment(0);
     mPointLightPipeline.Load("Shaders/shadow.vert.spv", "Shaders/shadow.frag.spv", "Shaders/shadow.geom.spv", "", mRenderPass, 0);
 
     mDirectionalShadowPipeline.AddDescriptor(mDescriptor, Renderer::GetTextureDescriptor());
     mDirectionalShadowPipeline.AddLayout(Vertex::GetVertexLayout(0, 0));
     mDirectionalShadowPipeline.SetPushConstantSize(sizeof(PushConstantData));
-    mDirectionalShadowPipeline.GetSettings().cullMode = CullMode::None;
+    mDirectionalShadowPipeline.GetSettings().cullMode = CullMode::Back;
     mDirectionalShadowPipeline.AddColorBlendAttachment(0);
-    mDirectionalShadowPipeline.Load("Shaders/directional.vert.spv", "Shaders/directional.frag.spv", "Shaders/directional.geom.spv", "", mRenderPass, 0);
+    mDirectionalShadowPipeline.SetDepthBias(true, 1, 0);
+    mDirectionalShadowPipeline.Load("Shaders/directional.vert.spv", "Shaders/directional.frag.spv", mRenderPass, 0);
 
     mCommandBuffer.CreateCommandBuffer();
     mSampler.CreateSampler();
@@ -82,14 +84,13 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
     if (!mIsCubeMap)
     {
         mIsCubeMap = true;
-        DestroyImage(mShadowMap);
+        mShadowMap.DestroyImage();
         mFrameBuffers.clear();
+        mShadowMap.CreateCubeMap(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler, ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One, 1);
 
-        mShadowMap = CreateCubeMapImage(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler,
-                                        ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One);
         FrameBuffer frameBuffer;
-        frameBuffer.CreateFrameBuffer(std::initializer_list<ImageDeprecated>{mShadowMap}, mRenderPass, 6);
-        mFrameBuffers.emplace_back(frameBuffer);
+        frameBuffer.CreateFrameBuffer(mShadowMap.GetSize(), std::initializer_list<const ImageView>{mShadowMap.GetImageView()}, mRenderPass);
+        mFrameBuffers.push_back(frameBuffer);
     }
 
     glm::vec3 front[6] =
@@ -122,7 +123,7 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 
     mCommandBuffer.BeginRecording();
 
-    mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[0], mShadowMap.size, {{1.f, 1.f, 1.f, 1.f}});
+    mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[0], mShadowMap.GetSize(), {{1.f, 1.f, 1.f, 1.f}});
 
     CmdBindDescriptors(mCommandBuffer, mPointLightPipeline.GetGraphicsPipeline(), {&mDescriptor, &Renderer::GetTextureDescriptor()});
     mPointLightPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
@@ -138,8 +139,8 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 
         VkViewport viewport =
             {
-                .width = (float)mShadowMap.size.x,
-                .height = (float)mShadowMap.size.y,
+                .width = (float)mShadowMap.GetSize().x,
+                .height = (float)mShadowMap.GetSize().y,
                 .minDepth = 0.f,
                 .maxDepth = 1.f,
             };
@@ -151,7 +152,7 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 
         vkCmdSetViewport(mCommandBuffer.GetHandle(), 0, 1, &viewport);
         vkCmdSetScissor(mCommandBuffer.GetHandle(), 0, 1, &scissor);
-        vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_FRONT_BIT);
+        vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_NONE);
         vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
         vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
 
@@ -168,6 +169,7 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 
     mShadowMapOutdated = false;
 }
+
 void Light::GenerateDirectionalLightShadowMap(const std::vector<RenderCommand> &renderCommands)
 {
     if (!mShadowMapOutdated)
@@ -176,17 +178,27 @@ void Light::GenerateDirectionalLightShadowMap(const std::vector<RenderCommand> &
     }
 
     int cascadeCount = 4;
-    if (mIsCubeMap || mShadowMap.handle == VK_NULL_HANDLE)
+    if (mIsCubeMap || mShadowMap.GetHandle() == VK_NULL_HANDLE)
     {
         mIsCubeMap = false;
-        DestroyImage(mShadowMap);
+        mShadowMap.DestroyImage();
         mFrameBuffers.clear();
-        mShadowMap = CreateImage(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler,
-                                 ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One, cascadeCount);
+        mShadowMap.CreateImage(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler,
+                               ImageType::TwoDimensional, ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One, cascadeCount);
 
-        FrameBuffer frameBuffer;
-        frameBuffer.CreateFrameBuffer(std::initializer_list<ImageDeprecated>{mShadowMap}, mRenderPass, 4);
-        mFrameBuffers.emplace_back(frameBuffer);
+        mFrameBuffers.clear();
+        mImageViews.clear();
+
+        for (int i = 0; i < cascadeCount; i++)
+        {
+            ImageView view;
+            view.CreateImageView(mShadowMap, ViewType::TwoDimensional, ImageAspect::Depth, i, 1);
+            mImageViews.push_back(view);
+
+            FrameBuffer frameBuffer;
+            frameBuffer.CreateFrameBuffer(mShadowMap.GetSize(), std::initializer_list<const ImageView>{view}, mRenderPass, 1);
+            mFrameBuffers.emplace_back(frameBuffer);
+        }
     }
 
     ShadowMapUniformData data{};
@@ -195,44 +207,54 @@ void Light::GenerateDirectionalLightShadowMap(const std::vector<RenderCommand> &
         data.projections[i] = GetDirectionalProjection(i);
     }
     data.position = mPosition;
+
     mUniformBuffer.SetData(&data);
     mDescriptor.UpdateBuffer(mUniformBuffer.GetBuffer(), 0);
 
     mCommandBuffer.BeginRecording();
 
-    mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[0], mShadowMap.size, {{1.f, 1.f, 1.f, 1.f}});
-
-    CmdBindDescriptors(mCommandBuffer, mDirectionalShadowPipeline.GetGraphicsPipeline(), std::initializer_list<const Descriptor *>{&mDescriptor, &Renderer::GetTextureDescriptor()});
-    mDirectionalShadowPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
-
-    for (const RenderCommand &renderCommand : renderCommands)
+    for (int i = 0; i < cascadeCount; i++)
     {
-        CmdBindVertexBuffers(mCommandBuffer, {*renderCommand.vertexBuffer});
-        vkCmdBindIndexBuffer(mCommandBuffer.GetHandle(), renderCommand.indexBuffer->handle, 0, VK_INDEX_TYPE_UINT32);
-        VkViewport viewport =
-            {
-                .width = (float)mShadowMap.size.x,
-                .height = (float)mShadowMap.size.y,
-                .minDepth = 0.f,
-                .maxDepth = 1.f,
-            };
+        mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[i], mShadowMap.GetSize(), {{1.f, 1.f, 1.f, 1.f}});
 
-        VkRect2D scissor =
-            {
-                .extent = {(uint32_t)viewport.width, (uint32_t)viewport.height},
-            };
+        CmdBindDescriptors(mCommandBuffer, mDirectionalShadowPipeline.GetGraphicsPipeline(), std::initializer_list<const Descriptor *>{&mDescriptor, &Renderer::GetTextureDescriptor()});
+        mDirectionalShadowPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
 
-        vkCmdSetViewport(mCommandBuffer.GetHandle(), 0, 1, &viewport);
-        vkCmdSetScissor(mCommandBuffer.GetHandle(), 0, 1, &scissor);
-        vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_FRONT_BIT);
-        vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
-        vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
-        vkCmdPushConstants(mCommandBuffer.GetHandle(), mDirectionalShadowPipeline.GetGraphicsPipeline().GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
+        for (const RenderCommand &renderCommand : renderCommands)
+        {
+            PushConstantData *data = (PushConstantData *)&renderCommand.pushContantData[0];
+            ShadowPushConstant pushConstant;
+            pushConstant.model = data->model;
+            pushConstant.intensity = mIntensity;
+            pushConstant.projectionIndex = i;
 
-        vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, 1, 0, 0, 0);
+            CmdBindVertexBuffers(mCommandBuffer, {*renderCommand.vertexBuffer});
+            vkCmdBindIndexBuffer(mCommandBuffer.GetHandle(), renderCommand.indexBuffer->handle, 0, VK_INDEX_TYPE_UINT32);
+            VkViewport viewport =
+                {
+                    .width = (float)mShadowMap.GetSize().x,
+                    .height = (float)mShadowMap.GetSize().y,
+                    .minDepth = 0.f,
+                    .maxDepth = 1.f,
+                };
+
+            VkRect2D scissor =
+                {
+                    .extent = {(uint32_t)viewport.width, (uint32_t)viewport.height},
+                };
+
+            vkCmdSetViewport(mCommandBuffer.GetHandle(), 0, 1, &viewport);
+            vkCmdSetScissor(mCommandBuffer.GetHandle(), 0, 1, &scissor);
+            vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_NONE);
+            vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
+            vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
+            vkCmdPushConstants(mCommandBuffer.GetHandle(), mDirectionalShadowPipeline.GetGraphicsPipeline().GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, sizeof(pushConstant), &pushConstant);
+
+            vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, 1, 0, 0, 0);
+        }
+
+        mRenderPass.CmdEndRenderPass(mCommandBuffer);
     }
-
-    mRenderPass.CmdEndRenderPass(mCommandBuffer);
 
     mCommandBuffer.EndRecording();
     mCommandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().graphics);
@@ -248,10 +270,9 @@ void Light::GenerateSpotLightShadowMap(const std::vector<RenderCommand> &renderC
 
     if (mIsCubeMap)
     {
-        DestroyImage(mShadowMap);
+        mShadowMap.DestroyImage();
 
-        mShadowMap = CreateImage(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler,
-                                 ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One);
+        mShadowMap.CreateImage(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler, ImageType::TwoDimensional, ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One);
         mIsCubeMap = false;
     }
 }
@@ -457,7 +478,7 @@ uint32_t Light::GetShadowMapResolution() const
     return mShadowMapResolution;
 }
 
-const ImageDeprecated &Light::GetShadowMap() const
+const Image &Light::GetShadowMap() const
 {
     return mShadowMap;
 }

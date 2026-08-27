@@ -32,6 +32,8 @@ void Renderer::Initialize(const RendererSpecification &specification)
 
     mCommandBuffer.CreateCommandBuffer();
 
+    mSampler.SetFilter(Filter::Linear, Filter::Linear);
+    mSampler.EnableCompare(true, CompareType::Less);
     mSampler.CreateSampler();
 
     mPresentInputDescriptor.AddDescriptor(DescriptorType::CombinedSampler, ShaderStage::Fragment);
@@ -638,7 +640,7 @@ StorageBuffer Renderer::mLightStorageBuffer;
 std::vector<LightUniformData> Renderer::mLight;
 Sampler Renderer::mSampler;
 Descriptor Renderer::mShadowMapDescriptor;
-std::vector<ImageDeprecated> Renderer::mShadowMaps;
+std::vector<Image> Renderer::mShadowMaps;
 Descriptor Renderer::mBufferDescriptor;
 std::string Renderer::mBasicShaderID;
 std::unordered_map<std::string, GraphicsPipeline> Renderer::mShaderPipelineMap;

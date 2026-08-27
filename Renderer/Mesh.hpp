@@ -11,11 +11,9 @@ struct Vertex
     glm::vec3 position = glm::vec3(0);
     glm::vec2 uv = glm::vec3(0);
     glm::vec3 normal = glm::vec3(0);
-    glm::vec3 tangent = glm::vec3(0);
-    glm::vec3 bitangent = glm::vec3(0);
 
-    Vertex(glm::vec3 position, glm::vec2 uv, glm::vec3 normal, glm::vec3 tangent, glm::vec3 bitangent)
-        : position(position), uv(uv), normal(normal), tangent(tangent), bitangent(bitangent)
+    Vertex(glm::vec3 position, glm::vec2 uv, glm::vec3 normal)
+        : position(position), uv(uv), normal(normal)
     {
     }
     Vertex() = default;
@@ -27,8 +25,6 @@ struct Vertex
         layout.attributes.emplace_back(binding, 0 + startLocation, offsetof(Vertex, position), ImageFormat::RGB32);
         layout.attributes.emplace_back(binding, 1 + startLocation, offsetof(Vertex, uv), ImageFormat::RG32);
         layout.attributes.emplace_back(binding, 2 + startLocation, offsetof(Vertex, normal), ImageFormat::RGB32);
-        layout.attributes.emplace_back(binding, 3 + startLocation, offsetof(Vertex, tangent), ImageFormat::RGB32);
-        layout.attributes.emplace_back(binding, 4 + startLocation, offsetof(Vertex, bitangent), ImageFormat::RGB32);
 
         layout.bindings.emplace_back(binding, sizeof(Vertex), InputRate::Vertex);
 

@@ -56,6 +56,8 @@ public:
 
     void SetCompareOp(CompareType compare);
 
+    void SetDepthBias(bool enable, float slopeFactor, float constantFactor);
+
 private:
     VkShaderModule mVertexShader = VK_NULL_HANDLE;
     VkShaderModule mFragmentShader = VK_NULL_HANDLE;
@@ -85,4 +87,8 @@ private:
     bool mWireframeEnable = false;
 
     VkCompareOp mDepthCompareOp = VK_COMPARE_OP_LESS;
+
+    bool mEnableDepthBias = false;
+    float mSlopeFactor = 0.f;
+    float mConstantFactor = 0.f;
 };

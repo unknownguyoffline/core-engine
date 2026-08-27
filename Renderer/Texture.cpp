@@ -2,6 +2,7 @@
 #include "Core/Macro.hpp"
 #include "Renderer/CommandBuffer.hpp"
 #include "Renderer/Helper.hpp"
+#include <Renderer/GraphicsContext.hpp>
 #include <filesystem>
 #include <memory.h>
 
@@ -171,8 +172,10 @@ void Texture::Create(void *data, const glm::uvec2 &size, ImageFormat format, Fil
         staging[i] = byteData[i];
     }
 
+    VkCommandPool commandPool = CreateCommandPool();
+
     CommandBuffer commandBuffer;
-    commandBuffer.CreateCommandBuffer();
+    commandBuffer.CreateCommandBuffer(commandPool);
 
     commandBuffer.BeginRecording(true);
     CmdTransitionImageLayout(commandBuffer, ImageLayout::None, ImageLayout::TransferDestination, ImageAspect::Color, mImage);

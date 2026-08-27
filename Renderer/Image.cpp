@@ -79,9 +79,9 @@ void Image::CreateDepthAttachment(const glm::uvec2 &size, ImageUsage additionalU
 {
     CreateImage(size, ImageFormat::D32, ImageUsage::DepthStencil | additionalUsage, ImageType::TwoDimensional, ImageAspect::Depth, MemoryProperty::DeviceLocal, sampleCount, layerCount, mipmapCount, 1);
 }
-void Image::CreateCubeMap(const glm::uvec2 &size, ImageFormat format, ImageUsage additionalUsage, ImageAspect aspect, MemoryProperty memoryProperty, SampleCount sampleCount, uint32_t mipmapCount)
+void Image::CreateCubeMap(const glm::uvec2 &size, ImageFormat format, ImageUsage usage, ImageAspect aspect, MemoryProperty memoryProperty, SampleCount sampleCount, uint32_t mipmapCount)
 {
-    CreateImage(size, format, additionalUsage, ImageType::TwoDimensional, aspect, memoryProperty, sampleCount, 6, mipmapCount, 1);
+    CreateImage(size, format, usage, ImageType::TwoDimensional, aspect, memoryProperty, sampleCount, 6, mipmapCount, 1);
 }
 
 void Image::DestroyImage()

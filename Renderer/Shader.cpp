@@ -142,6 +142,10 @@ void Shader::SetPushConstantSize(size_t size)
 {
     mGraphicsPipeline.SetPushConstant(ShaderStage::All, size);
 }
+void Shader::SetDepthBias(bool enable, float slopeFactor, float constantFactor)
+{
+    mGraphicsPipeline.SetDepthBias(enable, slopeFactor, constantFactor);
+}
 const ShaderSettings &Shader::GetSettings() const
 {
     return mSettings;
