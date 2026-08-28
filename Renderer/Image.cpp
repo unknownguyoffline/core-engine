@@ -5,7 +5,7 @@
 #include "Renderer/GraphicsContext.hpp"
 #include <cstring>
 
-void Image::CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage usage, ImageType type, ImageAspect aspect, MemoryProperty memoryProperty, SampleCount sampleCount, uint32_t layerCount, uint32_t mipmapCount, uint32_t depth)
+void Image::CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage usage, ImageType type, ImageAspect aspect, MemoryProperty memoryProperty, SampleCount sampleCount, uint32_t layerCount, uint32_t mipmapCount, uint32_t depth, bool cubeMap)
 {
     VkImageCreateInfo createInfo =
         {
@@ -68,6 +68,11 @@ void Image::CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage u
     mMipmapCount = mipmapCount;
     mMemorySize = requirements.size;
 
+    if (cubeMap)
+    {
+        viewType = ViewType::Cube;
+    }
+
     mImageView.CreateImageView(*this, viewType, aspect, 0, layerCount, 0, mipmapCount);
 }
 
@@ -81,7 +86,7 @@ void Image::CreateDepthAttachment(const glm::uvec2 &size, ImageUsage additionalU
 }
 void Image::CreateCubeMap(const glm::uvec2 &size, ImageFormat format, ImageUsage usage, ImageAspect aspect, MemoryProperty memoryProperty, SampleCount sampleCount, uint32_t mipmapCount)
 {
-    CreateImage(size, format, usage, ImageType::TwoDimensional, aspect, memoryProperty, sampleCount, 6, mipmapCount, 1);
+    CreateImage(size, format, usage, ImageType::TwoDimensional, aspect, memoryProperty, sampleCount, 6, mipmapCount, 1, true);
 }
 
 void Image::DestroyImage()

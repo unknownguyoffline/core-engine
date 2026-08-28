@@ -1,11 +1,9 @@
 #pragma once
-#include "Assets/ShaderManager.hpp"
 #include "Renderer/Camera.hpp"
 #include "Renderer/ImageView.hpp"
 #include "Renderer/RendererType.hpp"
 #include "Renderer/Shader.hpp"
 #include "Renderer/UniformBuffer.hpp"
-#include "Renderer/Utility.hpp"
 #include <glm/glm.hpp>
 
 #define USE_GEOMETRY_SHADER 1

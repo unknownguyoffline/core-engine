@@ -28,6 +28,8 @@ private:
             .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
             .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
             .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .compareEnable = VK_FALSE,
+            .compareOp = VK_COMPARE_OP_ALWAYS,
             .minLod = 1,
             .maxLod = 1,
             .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,

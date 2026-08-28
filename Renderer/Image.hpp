@@ -7,7 +7,7 @@
 class Image
 {
 public:
-    void CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage usage, ImageType type = ImageType::TwoDimensional, ImageAspect aspect = ImageAspect::Color, MemoryProperty memoryProperty = MemoryProperty::DeviceLocal, SampleCount sampleCount = SampleCount::One, uint32_t layerCount = 1, uint32_t mipmapCount = 1, uint32_t depth = 1);
+    void CreateImage(const glm::uvec2 &size, ImageFormat format, ImageUsage usage, ImageType type = ImageType::TwoDimensional, ImageAspect aspect = ImageAspect::Color, MemoryProperty memoryProperty = MemoryProperty::DeviceLocal, SampleCount sampleCount = SampleCount::One, uint32_t layerCount = 1, uint32_t mipmapCount = 1, uint32_t depth = 1, bool cubeMap = false);
     void CreateColorAttachment(const glm::uvec2 &size, ImageUsage additionalUsage, SampleCount sampleCount = SampleCount::One, uint32_t layerCount = 1, uint32_t mipmapCount = 1);
     void CreateDepthAttachment(const glm::uvec2 &size, ImageUsage additionalUsage, SampleCount sampleCount = SampleCount::One, uint32_t layerCount = 1, uint32_t mipmapCount = 1);
     void CreateCubeMap(const glm::uvec2 &size, ImageFormat format, ImageUsage additionalUsage, ImageAspect aspect, MemoryProperty memoryProperty, SampleCount sampleCount, uint32_t mipmapCount);

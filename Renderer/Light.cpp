@@ -1,13 +1,10 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include "Light.hpp"
-#include "Assets/ShaderManager.hpp"
-#include "Assets/TextureManager.hpp"
 #include "Renderer/Helper.hpp"
 #include "Renderer/ImageView.hpp"
 #include "Renderer/Mesh.hpp"
 #include "Renderer/Renderer.hpp"
-#include <cstring>
 #include <glm/gtc/matrix_transform.hpp>
 
 void Light::Initialize()
@@ -30,14 +27,14 @@ void Light::Initialize()
 
     mPointLightPipeline.AddDescriptor(mDescriptor, Renderer::GetTextureDescriptor());
     mPointLightPipeline.AddLayout(Vertex::GetVertexLayout(0, 0));
-    mPointLightPipeline.SetPushConstantSize(sizeof(PushConstantData));
+    mPointLightPipeline.SetPushConstantSize(sizeof(ShadowPushConstant));
     mPointLightPipeline.GetSettings().cullMode = CullMode::Back;
     mPointLightPipeline.AddColorBlendAttachment(0);
-    mPointLightPipeline.Load("Shaders/shadow.vert.spv", "Shaders/shadow.frag.spv", "Shaders/shadow.geom.spv", "", mRenderPass, 0);
+    mPointLightPipeline.Load("Shaders/shadow.vert.spv", "Shaders/shadow.frag.spv", mRenderPass, 0);
 
     mDirectionalShadowPipeline.AddDescriptor(mDescriptor, Renderer::GetTextureDescriptor());
     mDirectionalShadowPipeline.AddLayout(Vertex::GetVertexLayout(0, 0));
-    mDirectionalShadowPipeline.SetPushConstantSize(sizeof(PushConstantData));
+    mDirectionalShadowPipeline.SetPushConstantSize(sizeof(ShadowPushConstant));
     mDirectionalShadowPipeline.GetSettings().cullMode = CullMode::Back;
     mDirectionalShadowPipeline.AddColorBlendAttachment(0);
     mDirectionalShadowPipeline.SetDepthBias(true, 1, 0);
@@ -78,7 +75,7 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
 {
     if (!mShadowMapOutdated)
     {
-        return;
+        // return;
     }
 
     if (!mIsCubeMap)
@@ -86,11 +83,18 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
         mIsCubeMap = true;
         mShadowMap.DestroyImage();
         mFrameBuffers.clear();
+        mImageViews.clear();
         mShadowMap.CreateCubeMap(glm::uvec2(mShadowMapResolution), ImageFormat::D32, ImageUsage::DepthStencil | ImageUsage::Sampler, ImageAspect::Depth, MemoryProperty::DeviceLocal, SampleCount::One, 1);
 
-        FrameBuffer frameBuffer;
-        frameBuffer.CreateFrameBuffer(mShadowMap.GetSize(), std::initializer_list<const ImageView>{mShadowMap.GetImageView()}, mRenderPass);
-        mFrameBuffers.push_back(frameBuffer);
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            ImageView view;
+            view.CreateImageView(mShadowMap, ViewType::TwoDimensional, ImageAspect::Depth, i, 1);
+            mImageViews.push_back(view);
+            FrameBuffer frameBuffer;
+            frameBuffer.CreateFrameBuffer(mShadowMap.GetSize(), std::initializer_list<const ImageView>{view}, mRenderPass);
+            mFrameBuffers.push_back(frameBuffer);
+        }
     }
 
     glm::vec3 front[6] =
@@ -118,50 +122,55 @@ void Light::GeneratePointLightShadowMap(const std::vector<RenderCommand> &render
     {
         data.projections[i] = GetPointProjection(front[i], up[i]);
     }
+
     data.position = mPosition;
     mUniformBuffer.SetData(&data);
-
     mCommandBuffer.BeginRecording();
 
-    mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[0], mShadowMap.GetSize(), {{1.f, 1.f, 1.f, 1.f}});
-
-    CmdBindDescriptors(mCommandBuffer, mPointLightPipeline.GetGraphicsPipeline(), {&mDescriptor, &Renderer::GetTextureDescriptor()});
-    mPointLightPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
-
-    for (const RenderCommand &renderCommand : renderCommands)
+    for (uint32_t i = 0; i < 6; i++)
     {
-        ShadowPushConstant constant{};
-        memcpy(&constant.model, renderCommand.pushContantData, sizeof(glm::mat4));
-        constant.intensity = mIntensity;
+        mRenderPass.CmdBeginRenderPass(mCommandBuffer, mFrameBuffers[i], mShadowMap.GetSize(), {{1.f, 1.f, 1.f, 1.f}});
 
-        CmdBindVertexBuffers(mCommandBuffer, {*renderCommand.vertexBuffer});
-        vkCmdBindIndexBuffer(mCommandBuffer.GetHandle(), renderCommand.indexBuffer->handle, 0, VK_INDEX_TYPE_UINT32);
+        CmdBindDescriptors(mCommandBuffer, mPointLightPipeline.GetGraphicsPipeline(), {&mDescriptor, &Renderer::GetTextureDescriptor()});
+        mPointLightPipeline.GetGraphicsPipeline().CmdBindPipeline(mCommandBuffer);
 
-        VkViewport viewport =
-            {
-                .width = (float)mShadowMap.GetSize().x,
-                .height = (float)mShadowMap.GetSize().y,
-                .minDepth = 0.f,
-                .maxDepth = 1.f,
-            };
+        for (const RenderCommand &renderCommand : renderCommands)
+        {
+            PushConstantData *data = (PushConstantData *)&renderCommand.pushContantData[0];
+            ShadowPushConstant pushConstant;
+            pushConstant.model = data->model;
+            pushConstant.intensity = mIntensity;
+            pushConstant.projectionIndex = i;
 
-        VkRect2D scissor =
-            {
-                .extent = {(uint32_t)viewport.width, (uint32_t)viewport.height},
-            };
+            CmdBindVertexBuffers(mCommandBuffer, {*renderCommand.vertexBuffer});
+            vkCmdBindIndexBuffer(mCommandBuffer.GetHandle(), renderCommand.indexBuffer->handle, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdSetViewport(mCommandBuffer.GetHandle(), 0, 1, &viewport);
-        vkCmdSetScissor(mCommandBuffer.GetHandle(), 0, 1, &scissor);
-        vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_NONE);
-        vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
-        vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
+            VkViewport viewport =
+                {
+                    .width = (float)mShadowMap.GetSize().x,
+                    .height = (float)mShadowMap.GetSize().y,
+                    .minDepth = 0.f,
+                    .maxDepth = 1.f,
+                };
 
-        if (renderCommand.pushContantSize != 0)
-            vkCmdPushConstants(mCommandBuffer.GetHandle(), mPointLightPipeline.GetGraphicsPipeline().GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, renderCommand.pushContantSize, renderCommand.pushContantData);
-        vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, 1, 0, 0, 0);
+            VkRect2D scissor =
+                {
+                    .extent = {(uint32_t)viewport.width, (uint32_t)viewport.height},
+                };
+
+            vkCmdSetViewport(mCommandBuffer.GetHandle(), 0, 1, &viewport);
+            vkCmdSetScissor(mCommandBuffer.GetHandle(), 0, 1, &scissor);
+            vkCmdSetCullMode(mCommandBuffer.GetHandle(), VK_CULL_MODE_NONE);
+            vkCmdSetDepthTestEnable(mCommandBuffer.GetHandle(), true);
+            vkCmdSetDepthWriteEnable(mCommandBuffer.GetHandle(), true);
+
+            if (renderCommand.pushContantSize != 0)
+                vkCmdPushConstants(mCommandBuffer.GetHandle(), mPointLightPipeline.GetGraphicsPipeline().GetPipelineLayout(), VK_SHADER_STAGE_ALL, 0, sizeof(pushConstant), &pushConstant);
+            vkCmdDrawIndexed(mCommandBuffer.GetHandle(), renderCommand.indexCount, 1, 0, 0, 0);
+        }
+
+        mRenderPass.CmdEndRenderPass(mCommandBuffer);
     }
-
-    mRenderPass.CmdEndRenderPass(mCommandBuffer);
 
     mCommandBuffer.EndRecording();
     mCommandBuffer.QueueSubmit(GraphicsContext::GetCurrentContext().GetQueues().graphics);
